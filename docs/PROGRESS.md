@@ -2,7 +2,7 @@
 
 Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>.md with "VERDICT: PASS", and the work is committed. The Stop hook reads this file.
 
-- [ ] M0 Setup and the gate
+- [x] M0 Setup and the gate
 - [ ] M1 Login, Register and the app shell
 - [ ] M2 Manage Rooms
 - [ ] M3 Manage Tenants and Tenant Manager

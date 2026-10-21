@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Style C Soft Rounded (docs/design.md). Components use these tokens, never raw hex. */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-page: #eef3f9;
+  --color-card: #ffffff;
+  --color-navy: #0a2a5e;
+  --color-blue: #1670b8;
+  --color-blue-hover: #0a4a85;
+  --color-ink: #14213d;
+  --color-label: #2c3a55;
+  --color-muted: #46536d;
+  --color-sidebar-text: #dce7f5;
+  --color-line: #e3eaf2;
+  --color-line-strong: #c5d1e0;
+  --color-soft: #f4f7fb;
+  --color-soft-blue: #e3edf8;
+
+  --color-ok: #1e6b3e;
+  --color-ok-bg: #e3f4ea;
+  --color-warn: #6b4a00;
+  --color-warn-bg: #fff4dc;
+  --color-bad: #b42318;
+  --color-bad-bg: #fdecea;
+
+  --radius-card: 24px;
+  --radius-card-lg: 28px;
+  --radius-field: 14px;
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-page font-sans text-ink;
+  }
+  body {
+    margin: 0;
+    overflow-x: hidden;
+  }
+  a {
+    @apply text-blue;
+  }
+}
