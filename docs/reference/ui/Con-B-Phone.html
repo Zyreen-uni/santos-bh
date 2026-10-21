@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concerns B Phone Sent</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1670B8}a:hover{color:#0A2A5E}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; color: #14213D; background: #EEF3F9; display: flex; flex-direction: column">
+  <header style="background: #0A2A5E; padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+    <a href="#" aria-label="Back to concerns" style="width: 44px; height: 44px; border-radius: 999px; background: rgba(255,255,255,0.12); color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 5 8 12 15 19"></polyline></svg></a>
+    <span style="font-weight: 700; font-size: 17px; color: #FFFFFF">Broken bed ladder</span>
+  </header>
+  <main style="padding: 16px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1">
+    <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 13px; color: #46536D">Maria Reyes, Room 102</span><span style="font-size: 12px; font-weight: 700; color: #0A4A85; background: #E3EDF8; border-radius: 999px; padding: 4px 10px; white-space: nowrap">In Progress</span></div>
+    <div style="align-self: flex-start; max-width: 75%; display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><div style="font-size: 15px; border-radius: 20px; padding: 12px 16px; background: #F4F7FB; border-bottom-left-radius: 6px">The ladder of bed 3 has a loose step. It moves when we climb up.</div><span style="font-size: 12px; color: #46536D">Maria Reyes, Oct 16</span></div>
+    <div style="align-self: flex-end; max-width: 75%; display: flex; flex-direction: column; gap: 4px; align-items: flex-end"><div style="font-size: 15px; border-radius: 20px; padding: 12px 16px; background: #0A2A5E; color: #FFFFFF; border-bottom-right-radius: 6px">Thanks Maria. Please avoid bed 3 for now. I will buy a new step tomorrow.</div><span style="font-size: 12px; color: #46536D">Brian Santos, Oct 17</span></div>
+    <div style="align-self: flex-end; max-width: 75%; display: flex; flex-direction: column; gap: 4px; align-items: flex-end"><div style="font-size: 15px; border-radius: 20px; padding: 12px 16px; background: #0A2A5E; color: #FFFFFF; border-bottom-right-radius: 6px">The new step arrives on Oct 21. I will install it that afternoon.</div><span style="font-size: 12px; color: #46536D">Brian Santos, Oct 20</span></div>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(10, 23, 46, 0.45); display: flex; align-items: center; justify-content: center; padding: 24px">
+    <section role="dialog" aria-labelledby="ok-t" style="width: 420px; max-width: 100%; background: #FFFFFF; border-radius: 28px; padding: 26px 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <span style="width: 60px; height: 60px; border-radius: 999px; background: #E3F4EA; color: #1E6B3E; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 7"></polyline></svg></span>
+      <h2 id="ok-t" style="margin: 0; font-weight: 800; font-size: 22px; color: #0A2A5E">Response Sent</h2>
+      <p style="margin: 0; font-size: 15px; color: #46536D">Maria Reyes will see your reply in My Concerns.</p>
+      <button type="button" style="font-family: inherit; font-weight: 700; font-size: 15px; color: #FFFFFF; background: #1670B8; border: 0; border-radius: 999px; padding: 13px 20px; width: 100%; margin-top: 6px">OK</button>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Login</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1670B8}a:hover{color:#0A2A5E}
+</style>
+</helmet>
+<div style="font-family: 'Plus Jakarta Sans', sans-serif; color: #14213D; background: #EEF3F9; min-height: 800px; display: flex; align-items: center; justify-content: center; padding: 40px 16px; box-sizing: border-box">
+  <form style="width: 100%; max-width: 440px; background: #FFFFFF; border-radius: 28px; padding: 40px 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <img src="santos-logo.png" alt="Santos Boarding House" style="height: 100px; width: auto; align-self: center">
+    <nav aria-label="Account" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #EEF3F9; border-radius: 999px; padding: 5px">
+      <a href="Main.dc.html" aria-current="page" style="text-align: center; text-decoration: none; font-weight: 700; font-size: 15px; color: #FFFFFF; background: #0A2A5E; border-radius: 999px; padding: 12px">Login</a>
+      <a href="C-Register.dc.html" style="text-align: center; text-decoration: none; font-weight: 600; font-size: 15px; color: #46536D; border-radius: 999px; padding: 12px">Register</a>
+    </nav>
+    <h1 style="margin: 0; font-weight: 800; font-size: 26px; color: #0A2A5E">Welcome back</h1>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="c-user" style="font-weight: 600; font-size: 14px; color: #2C3A55">Username</label>
+      <input id="c-user" type="text" value="maria.reyes" style="font-family: inherit; font-size: 16px; padding: 14px 16px; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 14px; color: #14213D">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="c-pass" style="font-weight: 600; font-size: 14px; color: #2C3A55">Password</label>
+      <div style="display: flex; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 14px; overflow: hidden">
+        <input id="c-pass" type="password" value="password1" style="flex-grow: 1; min-width: 0; font-family: inherit; font-size: 16px; padding: 14px 16px; background: transparent; border: 0; color: #14213D">
+        <button type="button" aria-label="Show password" style="background: transparent; border: 0; width: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#46536D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+      </div>
+    </div>
+    <button type="button" style="font-family: inherit; font-weight: 700; font-size: 17px; color: #FFFFFF; background: #1670B8; border: 0; border-radius: 999px; padding: 16px; cursor: pointer">Login</button>
+  </form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

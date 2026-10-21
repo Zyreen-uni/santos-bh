@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option C Phone Registration Successful</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1670B8}a:hover{color:#0A2A5E}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; color: #14213D; background: #EEF3F9">
+  <form style="margin: 24px 16px; background: #FFFFFF; border-radius: 24px; padding: 28px 22px; display: flex; flex-direction: column; gap: 16px">
+    <img src="santos-logo.png" alt="Santos Boarding House" style="height: 64px; width: auto; align-self: center">
+    <nav aria-label="Account" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #EEF3F9; border-radius: 999px; padding: 4px">
+      <a href="Main.dc.html" style="text-align: center; text-decoration: none; font-weight: 600; font-size: 15px; color: #46536D; border-radius: 999px; padding: 11px">Login</a>
+      <a href="C-Register.dc.html" aria-current="page" style="text-align: center; text-decoration: none; font-weight: 700; font-size: 15px; color: #FFFFFF; background: #0A2A5E; border-radius: 999px; padding: 11px">Register</a>
+    </nav>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="cp-name" style="font-weight: 600; font-size: 14px; color: #2C3A55">Full Name</label>
+      <input id="cp-name" type="text" value="Maria Reyes" style="font-family: inherit; font-size: 16px; padding: 13px 14px; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 14px; color: #14213D">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="cp-user" style="font-weight: 600; font-size: 14px; color: #2C3A55">Username</label>
+      <input id="cp-user" type="text" value="maria.reyes" style="font-family: inherit; font-size: 16px; padding: 13px 14px; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 14px; color: #14213D">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="cp-email" style="font-weight: 600; font-size: 14px; color: #2C3A55">Email</label>
+      <input id="cp-email" type="email" value="maria.reyes@gmail.com" style="font-family: inherit; font-size: 16px; padding: 13px 14px; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 14px; color: #14213D">
+    </div>
+    <button type="button" style="font-family: inherit; font-weight: 700; font-size: 17px; color: #FFFFFF; background: #1670B8; border: 0; border-radius: 999px; padding: 15px">Register</button>
+  </form>
+  <div style="position: absolute; inset: 0; background: rgba(10, 23, 46, 0.5); display: flex; align-items: flex-end">
+    <div role="alertdialog" aria-labelledby="cp-ok" style="width: 100%; background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 32px 24px 36px; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; box-sizing: border-box">
+      <div style="width: 64px; height: 64px; border-radius: 999px; background: #E3F4EA; display: flex; align-items: center; justify-content: center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1E7A46" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 7"></polyline></svg>
+      </div>
+      <h2 id="cp-ok" style="margin: 0; font-weight: 800; font-size: 22px; color: #0A2A5E">Registration Successful</h2>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #46536D">You can now log in with your username and password.</p>
+      <button type="button" style="align-self: stretch; font-family: inherit; font-weight: 700; font-size: 17px; color: #FFFFFF; background: #0A2A5E; border: 0; border-radius: 999px; padding: 15px; margin-top: 6px">OK</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

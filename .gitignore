@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vercel/
+reports/*
+!reports/reviews/
+.claude/state/
+.claude/PAUSE
+.env
+.env.*
+!.env.example
+supabase/.temp/
+supabase/.branches/
+test-results/
+playwright-report/

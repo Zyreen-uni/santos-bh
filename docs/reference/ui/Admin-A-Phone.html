@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin Dashboard Phone</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1670B8}a:hover{color:#0A2A5E}
+</style>
+</helmet>
+<div style="width: 390px; height: 1200px; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; color: #14213D; background: #EEF3F9; display: flex; flex-direction: column">
+  <header style="background: #0A2A5E; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between">
+    <button type="button" aria-label="Open menu" style="width: 44px; height: 44px; border-radius: 999px; border: 0; background: rgba(255,255,255,0.12); color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg></button>
+    <img src="santos-logo-white.png" alt="Santos Boarding House" style="height: 36px; width: auto">
+    <span style="width: 40px; height: 40px; border-radius: 999px; background: #FFFFFF; color: #0A2A5E; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center" aria-label="Brian Santos">BS</span>
+  </header>
+  <main style="padding: 20px 16px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <h1 style="margin: 0; font-weight: 800; font-size: 26px; color: #0A2A5E">Dashboard</h1>
+      <p style="margin: 0; font-size: 14px; color: #46536D">Monday, October 19, 2026</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #46536D">Total Rooms</span><span style="font-weight: 800; font-size: 26px; color: #0A2A5E">5</span></div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #46536D">Total Tenants</span><span style="font-weight: 800; font-size: 26px; color: #0A2A5E">27</span></div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #46536D">Occupied</span><span style="font-weight: 800; font-size: 26px; color: #0A2A5E">4</span></div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #46536D">Available</span><span style="font-weight: 800; font-size: 26px; color: #0A2A5E">1</span></div>
+      <div style="background: #FFF4DC; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #6B4A00">Pending Payments</span><span style="font-weight: 800; font-size: 26px; color: #6B4A00">3</span></div>
+      <div style="background: #FDECEA; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #8A1A12">Overdue</span><span style="font-weight: 800; font-size: 26px; color: #8A1A12">1</span></div>
+    </div>
+    <section style="background: #FFFFFF; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: center"><h2 style="margin: 0; font-weight: 700; font-size: 17px; color: #0A2A5E">Recent Concerns</h2><a href="#" style="font-weight: 600; font-size: 14px">View all</a></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #E3EAF2"><div style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 15px">Leaking faucet in CR</span><span style="font-size: 13px; color: #46536D">Room 201, Oct 18</span></div><span style="font-size: 12px; font-weight: 700; color: #6B4A00; background: #FFF4DC; border-radius: 999px; padding: 4px 10px">Pending</span></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #E3EAF2"><div style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 15px">Broken bed ladder</span><span style="font-size: 13px; color: #46536D">Room 102, Oct 16</span></div><span style="font-size: 12px; font-weight: 700; color: #0A4A85; background: #E3EDF8; border-radius: 999px; padding: 4px 10px">In Progress</span></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #E3EAF2"><div style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 15px">Light bulb not working</span><span style="font-size: 13px; color: #46536D">Room 101, Oct 12</span></div><span style="font-size: 12px; font-weight: 700; color: #1E6B3E; background: #E3F4EA; border-radius: 999px; padding: 4px 10px">Resolved</span></div>
+    </section>
+    <section style="background: #FFFFFF; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-weight: 700; font-size: 17px; color: #0A2A5E">Storage Used</h2><span style="font-weight: 800; font-size: 18px">34%</span></div>
+      <div role="img" aria-label="340 MB of 1 GB used" style="height: 10px; background: #E3EAF2; border-radius: 999px; overflow: hidden"><div style="width: 34%; height: 10px; background: #1670B8; border-radius: 999px"></div></div>
+      <span style="font-size: 13px; color: #46536D">340 MB of 1 GB. Warns at 80%.</span>
+    </section>
+    <section style="background: #FFFFFF; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0; font-weight: 700; font-size: 17px; color: #0A2A5E">Latest Announcement</h2>
+      <span style="font-weight: 600; font-size: 15px">Water interruption on Oct 22</span>
+      <span style="font-size: 14px; line-height: 1.5; color: #46536D">The water pump gets repaired from 8 AM to 12 NN.</span>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

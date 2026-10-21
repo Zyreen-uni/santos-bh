@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Announcements A Phone Empty</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1670B8}a:hover{color:#0A2A5E}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; color: #14213D; background: #EEF3F9; display: flex; flex-direction: column">
+  <header style="background: #0A2A5E; padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+    <a href="#" aria-label="Back to announcements" style="width: 44px; height: 44px; border-radius: 999px; background: rgba(255,255,255,0.12); color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 5 8 12 15 19"></polyline></svg></a>
+    <span style="font-weight: 700; font-size: 17px; color: #FFFFFF">Create Announcement</span>
+  </header>
+  <main style="padding: 18px 16px; display: flex; flex-direction: column; gap: 14px">
+    <section style="background: #FFFFFF; border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; flex-direction: column; gap: 6px"><label for="nap-t" style="font-weight: 600; font-size: 14px; color: #2C3A55">Title</label><input id="nap-t" value="Fire drill on Nov 8" style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 15px; color: #14213D; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 14px; padding: 13px 14px"></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><label for="nap-m" style="font-weight: 600; font-size: 14px; color: #2C3A55">Message</label><textarea id="nap-m" placeholder="Write the announcement" style="width: 100%; height: 120px; box-sizing: border-box; resize: none; font-family: inherit; font-size: 15px; color: #14213D; background: #F4F7FB; border: 2px solid #B42318; border-radius: 16px; padding: 12px 14px"></textarea></div><span role="alert" style="font-size: 13px; font-weight: 600; color: #8A1A12">Fill in both the title and the message.</span>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-weight: 600; font-size: 14px; color: #2C3A55">Status</span><div role="radiogroup" aria-label="Status" style="display: flex; gap: 6px; background: #F4F7FB; border: 1px solid #C5D1E0; border-radius: 999px; padding: 4px"><button type="button" role="radio" aria-checked="false" style="flex: 1; font-family: inherit; font-size: 14px; font-weight: 600; color: #2C3A55; background: transparent; border: 0; border-radius: 999px; padding: 10px">Draft</button><button type="button" role="radio" aria-checked="true" style="flex: 1; font-family: inherit; font-size: 14px; font-weight: 700; color: #FFFFFF; background: #0A2A5E; border: 0; border-radius: 999px; padding: 10px">Published</button></div></div></section>
+    <button type="button" style="font-family: inherit; font-weight: 700; font-size: 15px; color: #FFFFFF; background: #1670B8; border: 0; border-radius: 999px; padding: 13px 20px; width: 100%; padding: 15px">Save</button>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(10, 23, 46, 0.45); display: flex; align-items: center; justify-content: center; padding: 24px">
+    <section role="alertdialog" aria-labelledby="ok-t" style="width: 420px; max-width: 100%; background: #FFFFFF; border-radius: 28px; padding: 26px 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <span style="width: 60px; height: 60px; border-radius: 999px; background: #FDECEA; color: #B42318; display: flex; align-items: center; justify-content: center"><span style="font-weight: 800; font-size: 26px">!</span></span>
+      <h2 id="ok-t" style="margin: 0; font-weight: 800; font-size: 22px; color: #0A2A5E">Please Fill All Fields</h2>
+      <p style="margin: 0; font-size: 15px; color: #46536D">The message is empty. Write the announcement, then save.</p>
+      <button type="button" style="font-family: inherit; font-weight: 700; font-size: 15px; color: #FFFFFF; background: #1670B8; border: 0; border-radius: 999px; padding: 13px 20px; width: 100%; margin-top: 6px">OK</button>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

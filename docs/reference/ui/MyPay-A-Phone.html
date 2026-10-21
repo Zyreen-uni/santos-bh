@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My Payments A Phone Sent</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1670B8}a:hover{color:#0A2A5E}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; color: #14213D; background: #EEF3F9; display: flex; flex-direction: column">
+  <header style="background: #0A2A5E; padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+    <a href="#" aria-label="Back to dashboard" style="width: 44px; height: 44px; border-radius: 999px; background: rgba(255,255,255,0.12); color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 5 8 12 15 19"></polyline></svg></a>
+    <span style="font-weight: 700; font-size: 17px; color: #FFFFFF">My Payments</span>
+  </header>
+  <main style="padding: 18px 16px; display: flex; flex-direction: column; gap: 12px"><section aria-labelledby="mp-b" style="background: #0A2A5E; color: #FFFFFF; border-radius: 28px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+      <h2 id="mp-b" style="margin: 0; font-weight: 700; font-size: 15px; color: #DCE7F5">October 2026 bill, due Oct 25</h2>
+      <span style="font-weight: 800; font-size: 32px">₱1,830</span>
+      <div style="display: flex; gap: 16px; font-size: 14px; color: #DCE7F5; flex-wrap: wrap"><span>Rent ₱1,500</span><span>Electric ₱300</span><span>Water ₱30</span></div>
+      <span style="font-size: 14px; color: #DCE7F5">Proof sent Oct 20. Waiting for the owner to verify.</span>
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; min-height: 26px"><span></span><span style="font-size: 12px; font-weight: 700; color: #6B4A00; background: #FFF4DC; border-radius: 999px; padding: 4px 10px; white-space: nowrap">Pending</span></div>
+    </section></main>
+  <div style="position: absolute; inset: 0; background: rgba(10, 23, 46, 0.45); display: flex; align-items: center; justify-content: center; padding: 24px">
+    <section role="dialog" aria-labelledby="ok-t" style="width: 420px; max-width: 100%; background: #FFFFFF; border-radius: 28px; padding: 26px 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <span style="width: 60px; height: 60px; border-radius: 999px; background: #E3F4EA; color: #1E6B3E; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 7"></polyline></svg></span>
+      <h2 id="ok-t" style="margin: 0; font-weight: 800; font-size: 22px; color: #0A2A5E">Payment Proof Sent</h2>
+      <p style="margin: 0; font-size: 15px; color: #46536D">The owner will check your GCash proof. Your status is now Pending.</p>
+      <button type="button" style="font-family: inherit; font-weight: 700; font-size: 15px; color: #FFFFFF; background: #1670B8; border: 0; border-radius: 999px; padding: 13px 20px; width: 100%; margin-top: 6px">OK</button>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

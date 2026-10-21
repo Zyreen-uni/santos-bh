@@ -1,0 +1,17 @@
+{
+  "name": "santos-bh",
+  "version": "2.0.0",
+  "description": "Santos Boarding House Management System: Supabase database, Vercel API functions and app helpers",
+  "private": true,
+  "scripts": {
+    "test": "node tests/db.test.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "@vercel/blob": "^2.8.2",
+    "sharp": "^0.34.4"
+  },
+  "devDependencies": {
+    "pg": "^8.16.0"
+  }
+}
