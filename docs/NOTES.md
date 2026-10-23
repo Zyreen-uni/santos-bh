@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M10
-Last green test count: 373 (92 unit, 92 db, 189 e2e incl. 3 seed steps)
+Current module: M11
+Last green test count: 391 (98 unit, 92 db, 201 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -150,6 +150,17 @@ Open problems: none
 - e2e: Pending/Overdue are checked against the Payments page in the same run (M6 tests in the same width change them);
   the 80% warning is checked by mocking the storage_usage response (79% no warning, 80% and 85% warn).
 
+## M10 plan (FR-017, FR-021)
+- Flowchart page 10, design Ten-A (laptop), Ten-A-Tablet, Ten-A-Phone (bill card + 8 tiles incl. Logout),
+  Ten-A-Phone-Carla ("Manager only" tile; the Utility Billing page shows "For the Tenant Manager Only", from M5).
+- Bill card: the oldest overdue bill, else the latest month's bill, with rent + electric + water, due date and the
+  status chip at the bottom right. Breakdown shows the split ("₱300 (Room 102 bill ₱1,800 ÷ 6)", "₱30 (₱810 ÷ 27)")
+  from utility_bills (all tenants may read them) and room_occupancy().
+- "2 new" announcements = published in the last 7 days. Upload Proof links to /tenant/payments?submit=1 (M12).
+- So M10 can check the sample (Maria Pending, Rina Unpaid, Maria's ladder In Progress) in every width, M6 now approves
+  Ana and records Tess, and M7 changes Ana's concern status instead of Maria's.
+- STATUS_TONE moved to src/lib/payments.ts (used by Payments and the tenant dashboard).
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -166,3 +177,4 @@ Open problems: none
 - M7 Manage Concerns: inbox, chat conversation, reply and status with flowchart popups; concern_messages migration with RLS, owner_name(), record_payment balance check. 341 tests. Review PASS after removing an unused helper.
 - M8 Manage Announcements: table/cards with Published/Draft tabs, create/edit popup, delete confirm, published_at trigger migration. 360 tests. Review PASS.
 - M9 Admin Dashboard: count tiles, recent concerns, storage used with 80% warning, latest announcement. 373 tests. Review PASS.
+- M10 Tenant Dashboard: bill card with breakdown and status chip, my room, announcements, concern, phone tiles; M6/M7 tests retargeted so the sample stays for M10; duplicate-id fix. 391 tests. Review PASS.

@@ -75,17 +75,18 @@ test('an empty reply says "Please Enter a Response"; a reply is "Response Sent" 
 
 test('Save Status: "Status Updated", and the change is in the history logs', async ({ page }, info) => {
   await openConcerns(page);
-  await item(page, 'Broken bed ladder').click();
-  await page.getByLabel('Status', { exact: true }).selectOption('resolved');
+  // Ana's concern, so Maria's ladder stays In Progress for the tenant dashboard (M10).
+  await item(page, 'Leaking faucet in CR').click();
+  await page.getByLabel('Status', { exact: true }).selectOption('in_progress');
   await page.getByRole('button', { name: 'Save Status' }).click();
   const done = page.getByRole('dialog').filter({ hasText: 'Status Updated' });
-  await expect(done).toContainText('C-0011 is now Resolved.');
+  await expect(done).toContainText('C-0012 is now In Progress.');
   await done.getByRole('button', { name: 'OK' }).click();
   if (!isLaptop(info)) await page.getByRole('button', { name: 'Back' }).click();
-  await expect(item(page, 'Broken bed ladder')).toContainText('Resolved');
-  const logs = await restAsPageUser(page, 'GET', 'activity_logs?select=old_data,new_data,actor_name&table_name=eq.concerns&record_id=eq.11&action=eq.update&order=log_id.desc&limit=1');
+  await expect(item(page, 'Leaking faucet in CR')).toContainText('In Progress');
+  const logs = await restAsPageUser(page, 'GET', 'activity_logs?select=old_data,new_data,actor_name&table_name=eq.concerns&record_id=eq.12&action=eq.update&order=log_id.desc&limit=1');
   expect(await logs.json()).toEqual([
-    expect.objectContaining({ actor_name: 'owner', old_data: expect.objectContaining({ status: 'in_progress' }), new_data: expect.objectContaining({ status: 'resolved' }) }),
+    expect.objectContaining({ actor_name: 'owner', old_data: expect.objectContaining({ status: 'pending' }), new_data: expect.objectContaining({ status: 'in_progress' }) }),
   ]);
 });
 

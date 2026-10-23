@@ -22,7 +22,7 @@ test('owner logs in and opens the Admin Dashboard', async ({ page }, info) => {
 test('tenant manager logs in and opens the Tenant Dashboard', async ({ page }, info) => {
   await login(page, 'maria.reyes');
   await expect(page.getByRole('heading', { name: 'Hi, Maria' })).toBeVisible();
-  await expect(page.getByText('Tenant Manager')).toBeVisible();
+  await expect(page.getByText('Tenant Manager', { exact: true })).toBeVisible();
   await screen(page, info, 'M1', 'tenant-dashboard');
   await openMenu(page, info);
   const menu = page.getByRole('navigation', { name: 'Tenant menu' }).filter({ visible: true });

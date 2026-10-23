@@ -237,7 +237,7 @@ test('manager swap, and an inactive manager loses access', async ({ page, browse
   // The new manager signs in and has the Manager tag; once marked inactive, the login stops working.
   const tenant = await asTenant(browser, info);
   await login(tenant.page, username, 'lara-pass-2026');
-  await expect(tenant.page.getByText('Tenant Manager')).toBeVisible();
+  await expect(tenant.page.getByText('Tenant Manager', { exact: true })).toBeVisible();
   await showRoom(page, '203');
   await markInactive(page, name);
   if (info.project.name !== 'laptop') await expect(page.getByText('Tenant Manager:')).toContainText('None');

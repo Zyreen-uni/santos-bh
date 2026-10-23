@@ -120,23 +120,24 @@ test('search shows the payment history, or "No Payment Found"', async ({ page },
   await page.getByRole('button', { name: 'OK' }).click();
 });
 
+// Ana is approved and Tess recorded, so Maria (Pending) and Rina (Unpaid) stay as the sample for M10.
 test('View Proof, then Approve: "Payment Verified" with the next receipt OR-000013', async ({ page }, info) => {
   await openPayments(page);
-  await rowOf(page, info, 'Maria Reyes').getByRole('button', { name: 'View Proof of Maria Reyes' }).click();
+  await rowOf(page, info, 'Ana Lim').getByRole('button', { name: 'View Proof of Ana Lim' }).click();
   const dialog = page.getByRole('dialog').filter({ hasText: 'GCash Proof' });
-  for (const text of ['Maria Reyes, Room 102', 'October 2026, ₱1,830', '₱1,830', 'Oct 18, 2026', 'Check the amount and reference # in your GCash app before you approve.']) {
+  for (const text of ['Ana Lim, Room 201', 'October 2026, ₱1,830', '₱1,830', 'Oct 19, 2026', 'Check the amount and reference # in your GCash app before you approve.']) {
     await expect(dialog).toContainText(text);
   }
-  await expect(dialog.getByRole('img', { name: 'GCash proof screenshot from Maria Reyes' })).toBeVisible();
+  await expect(dialog.getByRole('img', { name: 'GCash proof screenshot from Ana Lim' })).toBeVisible();
   await screen(page, info, 'M6', 'view-proof');
   await dialog.getByRole('button', { name: 'Approve' }).click();
   const ok = page.getByRole('dialog').filter({ hasText: 'Payment Verified' });
-  await expect(ok).toContainText('Receipt OR-000013 is ready for Maria Reyes.');
+  await expect(ok).toContainText('Receipt OR-000013 is ready for Ana Lim.');
   await ok.getByRole('button', { name: 'OK' }).click();
   expect(await counts(page)).toMatchObject({ Pending: 2, Paid: 12 });
-  await rowOf(page, info, 'Maria Reyes').getByRole('button', { name: /Receipt OR-000013/ }).click();
+  await rowOf(page, info, 'Ana Lim').getByRole('button', { name: /Receipt OR-000013/ }).click();
   const receipt = page.getByRole('dialog').filter({ hasText: 'Receipt' });
-  for (const text of ['OR-000013', 'Maria Reyes, Room 102', 'October 2026', '₱1,830', 'GCash']) await expect(receipt).toContainText(text);
+  for (const text of ['OR-000013', 'Ana Lim, Room 201', 'October 2026', '₱1,830', 'GCash']) await expect(receipt).toContainText(text);
 });
 
 test('Reject sets the bill back to Unpaid', async ({ page }, info) => {
@@ -153,7 +154,7 @@ test('Reject sets the bill back to Unpaid', async ({ page }, info) => {
 
 test('Record Payment saves a cash payment as Paid with a receipt; a bad amount is "Invalid Input"', async ({ page }, info) => {
   await openPayments(page);
-  await rowOf(page, info, 'Rina Flores').getByRole('button', { name: 'Record a payment for Rina Flores' }).click();
+  await rowOf(page, info, 'Tess Garcia').getByRole('button', { name: 'Record a payment for Tess Garcia' }).click();
   const form = page.getByRole('dialog').filter({ hasText: 'Record Payment' });
   await expect(form.getByLabel('Amount')).toHaveValue('1830');
   await form.getByLabel('Amount').fill('0');
@@ -165,9 +166,9 @@ test('Record Payment saves a cash payment as Paid with a receipt; a bad amount i
   await screen(page, info, 'M6', 'record-payment');
   await form.getByRole('button', { name: 'Save' }).click();
   const done = page.getByRole('dialog').filter({ hasText: 'Payment Recorded' });
-  await expect(done).toContainText(/Receipt OR-0000\d\d for Rina Flores\. The bill is paid\./);
+  await expect(done).toContainText(/Receipt OR-0000\d\d for Tess Garcia\. The bill is paid\./);
   await done.getByRole('button', { name: 'OK' }).click();
-  await expect(rowOf(page, info, 'Rina Flores')).toContainText('Paid');
+  await expect(rowOf(page, info, 'Tess Garcia')).toContainText('Paid');
 });
 
 test('a tenant cannot verify, record or mark bills overdue', async ({ page }) => {

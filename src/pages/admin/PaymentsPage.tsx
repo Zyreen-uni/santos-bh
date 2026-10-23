@@ -4,14 +4,14 @@ import { Download, ImageIcon, Search } from 'lucide-react';
 import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
 import { TransitionPanel } from '@/components/motion-primitives/transition-panel';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Chip, type ChipTone } from '@/components/ui/Chip';
+import { Chip } from '@/components/ui/Chip';
 import { btn } from '@/components/ui/buttons';
 import { SelectField, TextField } from '@/components/ui/Field';
 import { MessageDialog, Modal } from '@/components/ui/Modal';
 import { initials, useAuth } from '@/lib/auth';
 import {
   balance, checkRecord, dateTimePH, dayMonth, fetchBills, latestReceipt, monthYear, paymentRows, pendingProof, STATUS_LABEL,
-  statusCounts, todayPH, type Bill, type BillStatus, type Payment, type RecordForm,
+  STATUS_TONE, statusCounts, todayPH, type Bill, type BillStatus, type Payment, type RecordForm,
 } from '@/lib/payments';
 import { uploadProof } from '@/lib/photos';
 import { downloadMonthProofs, downloadProof, fetchProofFiles, zipName } from '@/lib/proofDownloads';
@@ -26,7 +26,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'overdue', label: 'Overdue' },
   { id: 'paid', label: 'Paid' },
 ];
-export const STATUS_TONE: Record<BillStatus, ChipTone> = { paid: 'ok', pending: 'warn', unpaid: 'bad', overdue: 'bad' };
 type Message = { title: string; text?: string; tone: 'ok' | 'bad' } | null;
 type Dialog =
   | { kind: 'proof'; bill: Bill; payment: Payment }

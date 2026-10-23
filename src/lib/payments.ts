@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { ChipTone } from '@/components/ui/Chip';
 
 export type BillStatus = 'paid' | 'unpaid' | 'pending' | 'overdue';
 
@@ -102,6 +103,7 @@ export function paymentRows(bills: Bill[]): { month: string | null; rows: Bill[]
 const STATUS_ORDER: Record<BillStatus, number> = { pending: 0, overdue: 1, unpaid: 2, paid: 3 };
 
 export const STATUS_LABEL: Record<BillStatus, string> = { paid: 'Paid', unpaid: 'Unpaid', pending: 'Pending', overdue: 'Overdue' };
+export const STATUS_TONE: Record<BillStatus, ChipTone> = { paid: 'ok', pending: 'warn', unpaid: 'bad', overdue: 'bad' };
 
 export function statusCounts(rows: Bill[]) {
   const counts = { all: rows.length, pending: 0, unpaid: 0, overdue: 0, paid: 0 };
