@@ -1,16 +1,24 @@
 // GET /api/cron/backup  Runs once a day from the Vercel cron in vercel.json (NFR-005).
-// Copies every table to one JSON file in Vercel Blob, outside Supabase. The free Supabase plan
-// has no automatic backups, and the daily request also keeps the project from pausing.
+// First marks unpaid bills past their due date as Overdue (refresh_overdue), so the saved status and the
+// history logs are right. Then copies every table to one JSON file in Vercel Blob, outside Supabase. The free
+// Supabase plan has no automatic backups, and the daily request also keeps the project from pausing.
 // Keeps the last 30 daily files plus the file from the 1st of each month.
 import { put, list, del } from '@vercel/blob';
 import { admin } from '../../lib/supabaseAdmin.js';
+import { backupDay, cronAllowed, dayPH, keepBackup } from '../../lib/cron.js';
 import type { ApiRequest, ApiResponse } from '../../lib/http.js';
 
-const TABLES = ['profiles', 'buildings', 'rooms', 'tenants', 'room_assignments', 'billing_settings',
-  'tenant_manager', 'utility_bills', 'monthly_bills', 'payments', 'receipts', 'concerns', 'announcements'];
+export const TABLES = ['profiles', 'buildings', 'rooms', 'tenants', 'room_assignments', 'billing_settings',
+  'tenant_manager', 'utility_bills', 'monthly_bills', 'payments', 'receipts', 'concerns', 'concern_messages',
+  'announcements', 'activity_logs'];
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).end();
+  if (!cronAllowed(req)) return res.status(401).end();
+  const today = dayPH(new Date());
+
+  const overdue = await admin().rpc('refresh_overdue', { p_today: today });
+  if (overdue.error) return res.status(500).json({ error: `refresh_overdue: ${overdue.error.message}` });
+
   const dump: Record<string, unknown[]> = {};
   for (const table of TABLES) {
     dump[table] = [];
@@ -21,22 +29,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (data.length < 1000) break;
     }
   }
-  const day = new Date().toISOString().slice(0, 10);
-  const blob = await put(`backups/santos-bh-${day}.json`, JSON.stringify(dump), {
+  const blob = await put(`backups/santos-bh-${today}.json`, JSON.stringify(dump), {
     access: 'private', contentType: 'application/json', allowOverwrite: true,
   });
-  // Remove daily files older than 30 days, except the one made on the 1st of each month.
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const old: string[] = [];
   let cursor: string | undefined;
   do {
     const page = await list({ prefix: 'backups/', cursor });
     for (const b of page.blobs) {
-      const date = (b.pathname.match(/(\d{4}-\d{2}-\d{2})\.json$/) || [])[1];
-      if (date && date < cutoff && !date.endsWith('-01')) old.push(b.url);
+      const day = backupDay(b.pathname);
+      if (day && !keepBackup(day, today)) old.push(b.url);
     }
-    cursor = page.cursor;
+    cursor = page.hasMore ? page.cursor : undefined;
   } while (cursor);
   if (old.length) await del(old);
-  res.status(200).json({ saved: blob.pathname, removed: old.length });
+  res.status(200).json({ saved: blob.pathname, removed: old.length, overdue: overdue.data });
 }

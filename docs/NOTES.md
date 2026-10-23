@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M16
-Last green test count: 491 (125 unit, 102 db, 264 e2e incl. 3 seed steps)
+Current module: M17
+Last green test count: 499 (132 unit, 103 db, 264 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -220,6 +220,15 @@ Open problems: none
   signOut now throws on a Supabase error; RequireRole catches it) and leaves no note; vitest testTimeout 20 s (form
   tests passed 5 s on the busy machine). RequireRole test mock returns a promise like the real signOut.
 
+## M16 plan (NFR-005, NFR-006)
+- lib/cron.ts: cronAllowed (timing-safe; no CRON_SECRET set means nobody gets in, so "Bearer undefined" no longer
+  matches), dayPH, keepBackup (last 30 days plus every 1st), backupDay.
+- api/cron/backup (daily 18:00 UTC = 02:00 Manila): refresh_overdue first, then every table (now also
+  concern_messages and activity_logs) to backups/santos-bh-<Manila date>.json in Vercel Blob, then old files removed
+  (list pages follow hasMore). api/cron/shrink-photos uses cronAllowed; same path, upsert, 400 px WebP.
+- tests/unit/crons.test.ts mocks @vercel/blob and the Supabase admin client. db check: the service role may run
+  refresh_overdue (the tenant refusal is checked over the API in M6, since db tests connect as postgres).
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -242,3 +251,4 @@ Open problems: none
 - M13 My Concerns and Announcements: one page with tabs (address picks the tab), concern cards and conversation with reply, Submit Concern (C-00NN, Pending), published announcements list and post. No schema change. 461 tests. Review PASS.
 - M14 History Logs: table with filters (search, user, action, dates), Log Details with old and new values (popup below laptop), 50 rows per "Show more", tenant sees own records only; log_actors() migration; RegisterPage test pastes instead of typing. 478 tests. Review PASS.
 - M15 Logout: confirm popup (Out-A) from sidebar, rail, phone menu and dashboard tile; Login note "Logged Out Successfully" (text-effect, sessionStorage); "Could Not Log Out" on failure; test time limits 60 s e2e, 20 s unit. 491 tests. Review PASS after one FAIL.
+- M16 Crons: lib/cron.ts (timing-safe secret, closed when unset; 30 days plus every 1st), backup runs refresh_overdue first and saves 15 tables by Manila date; shrink keeps the path; mocked Blob/Supabase unit tests. 499 tests. Review PASS.

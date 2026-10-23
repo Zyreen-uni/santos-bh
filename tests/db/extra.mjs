@@ -445,6 +445,30 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       eq((await as(ids.owner, `select * from public.log_actors() where username = 'anna'`)).rowCount, 1, 'owner sees anna');
       await denied(null, `select * from public.log_actors()`);
     },
+    // ---------------- M16 Crons (api/cron/backup runs refresh_overdue with the service role key)
+    'M16 the daily job (service role) marks overdue bills; anon cannot': async () => {
+      await saveBills(ids.anna, ROOMS());
+      const asService = async (sql) => {
+        await db.query('savepoint svc');
+        try {
+          await db.query(`select set_config('request.jwt.claims', '{"role":"service_role"}', true)`);
+          await db.query('set local role service_role');
+          const r = await db.query(sql);
+          await db.query('reset role');
+          await db.query('release savepoint svc');
+          return r;
+        } catch (e) {
+          await db.query('rollback to savepoint svc');
+          await db.query('reset role');
+          throw e;
+        }
+      };
+      eq((await asService(`select public.refresh_overdue('2026-10-26') as n`)).rows[0].n > 0, true, 'service role marks them');
+      eq((await bill('ben')).status, 'overdue', 'ben overdue');
+      // A tenant is refused through the API (e2e/m06-payments.spec.ts); here the session user is postgres, which the
+      // function lets through on purpose, so only the missing grant for anon can be shown.
+      await denied(null, `select public.refresh_overdue('2026-10-27')`);
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');

@@ -4,12 +4,13 @@
 // Handles up to 200 photos a run. Any left over wait for the next run.
 import sharp from 'sharp';
 import { admin } from '../../lib/supabaseAdmin.js';
+import { cronAllowed } from '../../lib/cron.js';
 import type { ApiRequest, ApiResponse } from '../../lib/http.js';
 
 const MONTHS = 12;
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).end();
+  if (!cronAllowed(req)) return res.status(401).end();
   const { data: due, error } = await admin().rpc('photos_due_for_shrink', { p_months: MONTHS, p_limit: 200 });
   if (error) return res.status(500).json({ error: error.message });
 
