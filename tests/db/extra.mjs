@@ -420,6 +420,31 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       eq((await as(ids.owner, `select title from public.announcements where title in ('Posted', 'Hidden') order by title`)).rows.map((r) => r.title), ['Hidden', 'Posted'], 'owner');
       await denied(ids.ben, `insert into public.announcements (title, message, status) values ('Mine', 'x', 'published')`);
     },
+    // ---------------- M14 History Logs (migration 20261030000000_log_actors.sql)
+    'M14 the owner reads every log; a tenant only the logs of their own records, with old and new values': async () => {
+      await as(ids.ben, `update public.tenants set contact_number = '0917 222 3333' where tenant_id = $1`, [ids.t_ben]);
+      await as(ids.anna, `update public.tenants set contact_number = '0917 444 5555' where tenant_id = $1`, [ids.t_anna]);
+      const all = (await as(ids.owner, `select tenant_id from public.activity_logs`)).rows;
+      const tenants = new Set(all.map((r) => String(r.tenant_id)));
+      eq(tenants.has(String(ids.t_ben)) && tenants.has(String(ids.t_anna)), true, 'owner sees both tenants');
+      const mine = (await as(ids.ben, `select tenant_id, actor_name, old_data, new_data from public.activity_logs`)).rows;
+      eq(mine.length > 0, true, 'ben sees his logs');
+      eq(mine.every((r) => String(r.tenant_id) === String(ids.t_ben)), true, 'ben sees only his own');
+      const edit = mine.find((r) => r.actor_name === 'benny' && r.new_data?.contact_number === '0917 222 3333');
+      eq(edit?.old_data?.contact_number !== undefined, true, 'old value kept');
+      await denied(ids.ben, `insert into public.activity_logs (action, table_name, record_id) values ('insert', 'rooms', '1')`);
+      eq((await as(ids.ben, `delete from public.activity_logs`)).rowCount, 0, 'no deletes');
+    },
+    'M14 log_actors names only the people in the caller\'s own logs': async () => {
+      await as(ids.ben, `update public.tenants set contact_number = '0917 222 3333' where tenant_id = $1`, [ids.t_ben]);
+      await as(ids.owner, `update public.tenants set email = 'ben@x.ph' where tenant_id = $1`, [ids.t_ben]);
+      await as(ids.anna, `update public.tenants set contact_number = '0917 444 5555' where tenant_id = $1`, [ids.t_anna]);
+      const ben = new Map((await as(ids.ben, `select * from public.log_actors()`)).rows.map((r) => [r.username, r]));
+      eq(ben.get('benny')?.role, 'tenant', 'himself'); eq(ben.get('owner')?.role, 'admin', 'the owner who changed his record');
+      eq(ben.has('anna'), false, 'not another tenant');
+      eq((await as(ids.owner, `select * from public.log_actors() where username = 'anna'`)).rowCount, 1, 'owner sees anna');
+      await denied(null, `select * from public.log_actors()`);
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');

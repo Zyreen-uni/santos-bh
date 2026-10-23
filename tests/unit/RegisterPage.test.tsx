@@ -23,9 +23,13 @@ function renderRegister() {
   );
 }
 
+// Click each field and paste its value: typing ~50 keys one by one could pass the 5 s test limit when the
+// whole suite runs in parallel.
 async function fill(values: Record<string, string>) {
   for (const [label, value] of Object.entries(values)) {
-    if (value) await userEvent.type(screen.getByLabelText(label), value);
+    if (!value) continue;
+    await userEvent.click(screen.getByLabelText(label));
+    await userEvent.paste(value);
   }
 }
 

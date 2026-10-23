@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M14
-Last green test count: 461 (115 unit, 100 db, 246 e2e incl. 3 seed steps)
+Current module: M15
+Last green test count: 478 (121 unit, 102 db, 255 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -195,6 +195,18 @@ Open problems: none
 - No schema change: concern ids, the first message and "published only" for tenants are already in the database.
   checkConcern, concernNote and fetchOwnerName live in src/lib/concerns.ts.
 
+## M14 plan (FR-025)
+- Flowchart page 14, design Log-C: filters (Search record, All users, All actions, Last 7 days / 30 days / All time),
+  table Date, User, Action (Create, Update, Delete, Reply chips), Record ("Payment, Carla Diaz, October", "Profile,
+  Contact #"), Log Details panel with OLD VALUE and NEW VALUE side by side. Tablet and phone: details in a popup.
+  Tenant: "My History Logs", "Only your own changes", no user filter. 50 rows at a time ("Show more"), newest 500.
+- Migration 20261030000000_log_actors.sql: log_actors() gives the names and roles of the people in the caller's own
+  visible logs. Why: a tenant cannot read other profiles (RLS), but the owner and the manager change their records.
+- src/lib/logs.ts turns a log row into words; ids and bookkeeping columns are hidden; updates that touch only
+  bookkeeping columns (the seed fixing created_at) are left out.
+- Also: tests/unit/RegisterPage.test.tsx pastes field values instead of typing each key (the M13 reviewer saw it
+  pass the 5 s limit under full parallel load). Same checks.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -215,3 +227,4 @@ Open problems: none
 - M11 My Profile and My Room: profile and room with 8 bed spaces and roommates, Edit Profile, photo change/remove (512 px, own folder), username change via api/account/username; my_roommates()/change_username() migration. 416 tests. Review PASS.
 - M12 My Payments: bill card, Submit GCash Proof (shrunk WebP, own folder, 1 MB bucket limit), receipts history, October utility bills with shares, owner GCash account in Settings; utility_entered()/gcash migration. 445 tests. Review PASS.
 - M13 My Concerns and Announcements: one page with tabs (address picks the tab), concern cards and conversation with reply, Submit Concern (C-00NN, Pending), published announcements list and post. No schema change. 461 tests. Review PASS.
+- M14 History Logs: table with filters (search, user, action, dates), Log Details with old and new values (popup below laptop), 50 rows per "Show more", tenant sees own records only; log_actors() migration; RegisterPage test pastes instead of typing. 478 tests. Review PASS.

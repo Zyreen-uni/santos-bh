@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 // Status chips (docs/design.md): green for Paid / Resolved / Available, amber for Pending,
 // red for Unpaid / Overdue, blue for Occupied and other neutral states, grey for Inactive.
-export type ChipTone = 'ok' | 'warn' | 'bad' | 'info' | 'off';
+export type ChipTone = 'ok' | 'warn' | 'bad' | 'info' | 'off' | 'reply';
 
 const TONES: Record<ChipTone, string> = {
   ok: 'bg-ok-bg text-ok',
@@ -11,6 +11,7 @@ const TONES: Record<ChipTone, string> = {
   bad: 'bg-bad-bg text-bad',
   info: 'bg-soft-blue text-blue-hover',
   off: 'bg-line text-muted',
+  reply: 'bg-reply-bg text-reply', // History Logs: Reply (Log-C.html)
 };
 
 export function Chip({ tone, children, className }: { tone: ChipTone; children: ReactNode; className?: string }) {
