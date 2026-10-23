@@ -82,3 +82,28 @@ export async function sendMessage(concernId: number, body: string) {
   const { error } = await supabase.from('concern_messages').insert({ concern_id: concernId, body });
   if (error) throw error;
 }
+
+// The owner's name for "Brian Santos, Owner" on replies and announcements.
+export async function fetchOwnerName(): Promise<string> {
+  const { data, error } = await supabase.rpc('owner_name');
+  if (error) throw error;
+  return (data as string | null) ?? 'Owner';
+}
+
+export const MAX_SUBJECT = 150;
+
+// Flowchart page 13: "Subject and details filled?" No: "Please Fill All Fields".
+export function checkConcern(subject: string, details: string): string | null {
+  if (!subject.trim() && !details.trim()) return 'The subject and the details are empty. Tell the owner what is wrong, then submit.';
+  if (!subject.trim()) return 'The subject is empty. Write a short title, such as "Leaking faucet".';
+  if (!details.trim()) return 'The details are empty. Tell the owner what is wrong, then submit.';
+  if (subject.trim().length > MAX_SUBJECT) return `The subject is too long. Keep it to ${MAX_SUBJECT} letters.`;
+  return null;
+}
+
+// "Owner replied Oct 20", "Fixed Sep 14" (MyCon-C-Tablet.html), or "Waiting for the owner".
+export function concernNote(c: Pick<Concern, 'status' | 'responded_at'>) {
+  if (c.status === 'resolved' && c.responded_at) return `Fixed ${shortDay(c.responded_at)}`;
+  if (c.responded_at) return `Owner replied ${shortDay(c.responded_at)}`;
+  return 'Waiting for the owner';
+}

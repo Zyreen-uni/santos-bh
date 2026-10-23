@@ -17,6 +17,7 @@ import ConcernsPage from '@/pages/admin/ConcernsPage';
 import AnnouncementsPage from '@/pages/admin/AnnouncementsPage';
 import MyProfilePage from '@/pages/tenant/MyProfilePage';
 import MyPaymentsPage from '@/pages/tenant/MyPaymentsPage';
+import MyConcernsPage from '@/pages/tenant/MyConcernsPage';
 
 // Pages with their own component. Menu items not listed here use MenuPage until their module.
 const ADMIN_PAGES: Record<string, ReactNode> = {
@@ -33,6 +34,8 @@ const TENANT_PAGES: Record<string, ReactNode> = {
   '/tenant/profile': <MyProfilePage section="profile" />,
   '/tenant/room': <MyProfilePage section="room" />,
   '/tenant/payments': <MyPaymentsPage />,
+  '/tenant/concerns': <MyConcernsPage />,
+  '/tenant/announcements': <MyConcernsPage />,
 };
 
 // The app opens on Login (no landing page). Role decides /admin or /tenant.

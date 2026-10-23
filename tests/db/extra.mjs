@@ -403,6 +403,23 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       await denied(ids.ben, `insert into public.payments (bill_id, amount, method, reference_no, proof_path) values ($1, 100, 'gcash', '1', $2)`, [anna.bill_id, `${ids.ben}/x.webp`]);
       eq((await as(ids.carl, `select * from public.payments`)).rowCount, 0, 'carl sees no other payments');
     },
+    // ---------------- M13 My Concerns and Announcements
+    'M13 a submitted concern gets the next number, starts Pending and opens its conversation': async () => {
+      const a = (await as(ids.ben, `insert into public.concerns (tenant_id, subject, details) values ($1, 'Leak', 'The sink leaks.') returning concern_id, status`, [ids.t_ben])).rows[0];
+      const b = (await as(ids.ben, `insert into public.concerns (tenant_id, subject, details) values ($1, 'Fan', 'The fan is noisy.') returning concern_id`, [ids.t_ben])).rows[0];
+      eq(a.status, 'pending', 'pending'); eq(Number(b.concern_id), Number(a.concern_id) + 1, 'next number');
+      eq((await as(ids.ben, `select body, from_owner from public.concern_messages where concern_id = $1`, [b.concern_id])).rows, [{ body: 'The fan is noisy.', from_owner: false }], 'first message');
+      await denied(ids.ben, `insert into public.concerns (tenant_id, subject, details, status) values ($1, 'Leak', 'Sink', 'resolved')`, [ids.t_ben]);
+      await denied(ids.ben, `insert into public.concerns (tenant_id, subject, details) values ($1, 'Leak', 'Sink')`, [ids.t_anna]);
+      eq((await as(ids.ben, `update public.concerns set status = 'resolved' where concern_id = $1`, [a.concern_id])).rowCount, 0, 'tenant cannot change the status');
+      eq((await as(ids.anna, `select * from public.concerns where concern_id = $1`, [a.concern_id])).rowCount, 0, 'anna cannot see it');
+    },
+    'M13 tenants see only published announcements; the owner sees drafts too': async () => {
+      await as(ids.owner, `insert into public.announcements (title, message, status) values ('Posted', 'Hello', 'published'), ('Hidden', 'Soon', 'draft')`);
+      eq((await as(ids.ben, `select title from public.announcements where title in ('Posted', 'Hidden') order by title`)).rows.map((r) => r.title), ['Posted'], 'tenant');
+      eq((await as(ids.owner, `select title from public.announcements where title in ('Posted', 'Hidden') order by title`)).rows.map((r) => r.title), ['Hidden', 'Posted'], 'owner');
+      await denied(ids.ben, `insert into public.announcements (title, message, status) values ('Mine', 'x', 'published')`);
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');

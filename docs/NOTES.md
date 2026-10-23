@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M13
-Last green test count: 445 (110 unit, 98 db, 237 e2e incl. 3 seed steps)
+Current module: M14
+Last green test count: 461 (115 unit, 100 db, 246 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -185,6 +185,16 @@ Open problems: none
 - e2e spec files are zero-padded (m00 to m12...): Playwright runs files in name order, and "m12" used to run before
   "m2", so a later module's changes reached earlier modules' checks in the same width.
 
+## M13 plan (FR-012, FR-015)
+- Flowchart page 13, design MyCon-C: one page "Concerns and News" with tabs My Concerns and Announcements
+  (animated-background tabs, transition-panel). /tenant/concerns and /tenant/announcements are the same page; the tab
+  follows the address, so both menu items work. Concern cards (C-xxxx, date, status, "Owner replied Oct 20" /
+  "Fixed Sep 14" / "Waiting for the owner"), details with the M7 Conversation and a reply box, Submit Concern popup
+  ("Please Fill All Fields", "Concern Submitted ... (C-0013) is now Pending."). Announcements: list and post
+  ("POSTED OCT 2, 2026", "Brian Santos, Owner"); phone and tablet show the list or the post with Back.
+- No schema change: concern ids, the first message and "published only" for tenants are already in the database.
+  checkConcern, concernNote and fetchOwnerName live in src/lib/concerns.ts.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -204,3 +214,4 @@ Open problems: none
 - M10 Tenant Dashboard: bill card with breakdown and status chip, my room, announcements, concern, phone tiles; M6/M7 tests retargeted so the sample stays for M10; duplicate-id fix. 391 tests. Review PASS.
 - M11 My Profile and My Room: profile and room with 8 bed spaces and roommates, Edit Profile, photo change/remove (512 px, own folder), username change via api/account/username; my_roommates()/change_username() migration. 416 tests. Review PASS.
 - M12 My Payments: bill card, Submit GCash Proof (shrunk WebP, own folder, 1 MB bucket limit), receipts history, October utility bills with shares, owner GCash account in Settings; utility_entered()/gcash migration. 445 tests. Review PASS.
+- M13 My Concerns and Announcements: one page with tabs (address picks the tab), concern cards and conversation with reply, Submit Concern (C-00NN, Pending), published announcements list and post. No schema change. 461 tests. Review PASS.
