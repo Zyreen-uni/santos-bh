@@ -378,5 +378,5 @@ const tests = {
     await denied(ids.owner, `select * from public.photos_due_for_shrink(12)`);
   },
 };
-  return { seed, tests, helpers: { as, ok, denied, eq, ids, MONTH, saveBills, ROOMS, bill } };
+  return { seed, tests, helpers: { as, ok, denied, eq, ids, MONTH, saveBills, ROOMS, bill, ganna } };
 }

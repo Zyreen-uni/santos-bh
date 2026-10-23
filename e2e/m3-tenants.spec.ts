@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Locator, type Page, type TestInfo } from '@playwright/test';
+import { expect, shiftClock, test, TODAY } from './fixtures';
+import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 import { expectNoHorizontalScroll, login, restAsPageUser, screen } from './helpers';
 
 // M3 Manage Tenants and Tenant Manager (FR-004, FR-005, FR-006, FR-023). Flowchart page 4, design Tenants-B.
@@ -63,7 +64,9 @@ async function createLogin(page: Page, name: string, username: string, password:
 // A second browser window for the tenant, so the owner stays signed in.
 async function asTenant(browser: Browser, info: TestInfo) {
   const ctx = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: info.project.use.viewport });
-  return { ctx, page: await ctx.newPage() };
+  const page = await ctx.newPage();
+  await shiftClock(page, TODAY);
+  return { ctx, page };
 }
 
 test('tenants are grouped by room with the counts from the seed', async ({ page }, info) => {

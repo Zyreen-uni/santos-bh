@@ -1,4 +1,5 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test } from './fixtures';
+import type { Page, TestInfo } from '@playwright/test';
 import { expectNoHorizontalScroll, login, restAsPageUser, screen } from './helpers';
 
 // M2 Manage Rooms (FR-001, FR-002, FR-003). Flowchart page 3, design Rooms-B.

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { expectNoHorizontalScroll, login, openMenu, passwordFor, screen } from './helpers';
 
 // M1 Login, Register and the app shell (FR-016, FR-005 register, NFR-003). Flowchart page 1.

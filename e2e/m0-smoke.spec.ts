@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { expectNoHorizontalScroll, screen } from './helpers';
 
 test('the app opens on the Login page', async ({ page }, info) => {

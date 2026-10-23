@@ -7,7 +7,9 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 export async function screen(page: Page, info: TestInfo, moduleId: string, name: string) {
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(350); // let motion finish (every animation is under 300 ms)
-  await page.screenshot({ path: `reports/screens/${moduleId}/${name}-${info.project.name}.png`, fullPage: true });
+  // With a popup open, take what the person sees: a full-page capture of a long page loses the popup.
+  const popupOpen = await page.evaluate(() => !!document.querySelector('dialog[open]'));
+  await page.screenshot({ path: `reports/screens/${moduleId}/${name}-${info.project.name}.png`, fullPage: !popupOpen });
 }
 
 // No horizontal scroll at any width (docs/design.md).

@@ -1,6 +1,6 @@
 // Database checks added by later modules (new migrations or module checks). They run after the
 // 52 reference checks, with the same seed, inside the same rolled-back transaction.
-export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill }) {
+export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ganna }) {
   return {
     // ---------------- M2 Manage Rooms
     'M2 owner adds, edits and deactivates a room': async () => {
@@ -227,6 +227,63 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill }) 
       await denied(ids.carl, `select public.save_utility_bills('2026-10-01', 900, '2026-10/rest.jpg', '[]')`);
       await denied(ids.carl, `insert into storage.objects (bucket_id, name) values ('utility-bills', '2026-10/fake.webp')`);
       eq((await as(ids.carl, `update public.utility_bills set amount = 1`)).rowCount, 0, 'tenant cannot correct a row');
+    },
+    // ---------------- M6 Manage Payments (migration 20261025000000_payments.sql)
+    'M6 record_payment saves a cash payment as paid with the next receipt number': async () => {
+      const b = await ganna();
+      const r = (await as(ids.owner, `select * from public.record_payment($1, 2400, '2026-10-20', 'cash')`, [b.bill_id])).rows[0];
+      eq(r.receipt_number, 'OR-000001', 'receipt'); eq(r.bill_status, 'paid', 'paid in full'); eq(r.amount_paid, '2400.00', 'amount paid');
+      const p = (await db.query(`select method, status, submitted_by, verified_by from public.payments where payment_id = $1`, [r.payment_id])).rows[0];
+      eq(p.method, 'cash', 'method'); eq(p.status, 'verified', 'payment verified'); eq(p.submitted_by, ids.owner, 'recorded by owner'); eq(p.verified_by, ids.owner, 'verified by owner');
+      await denied(ids.owner, `select * from public.record_payment($1, 10, '2026-10-20', 'cash')`, [b.bill_id]); // already paid
+    },
+    'M6 a part payment keeps the bill unpaid; the next payment gets the next receipt': async () => {
+      const b = await ganna();
+      eq((await as(ids.owner, `select * from public.record_payment($1, 1000, '2026-10-20', 'cash')`, [b.bill_id])).rows[0].bill_status, 'unpaid', 'part paid');
+      const r2 = (await as(ids.owner, `select * from public.record_payment($1, 1400, '2026-10-21', 'cash')`, [b.bill_id])).rows[0];
+      eq(r2.receipt_number, 'OR-000002', 'second receipt'); eq(r2.bill_status, 'paid', 'now paid');
+    },
+    'M6 record_payment refuses a tenant, an amount of 0, a GCash payment with no proof, and a future date': async () => {
+      const b = await ganna();
+      await denied(ids.ben, `select * from public.record_payment($1, 100, '2026-10-20', 'cash')`, [b.bill_id]);
+      await denied(ids.owner, `select * from public.record_payment($1, 0, '2026-10-20', 'cash')`, [b.bill_id]);
+      await denied(ids.owner, `select * from public.record_payment($1, 100, '2026-10-20', 'gcash', '123')`, [b.bill_id]);
+      await denied(ids.owner, `select * from public.record_payment($1, 100, current_date + 30, 'cash')`, [b.bill_id]);
+      eq((await bill('ben')).status, 'unpaid', 'nothing saved');
+    },
+    'M6 verify makes the next OR number, reject sets the bill back to unpaid': async () => {
+      const b = await ganna();
+      await db.query(`select setval('public.receipt_number_seq', 12, true)`); // the sample's latest receipt is OR-000012
+      const pay = async () => (await as(ids.ben, `insert into public.payments (bill_id, amount, method, reference_no, proof_path)
+        values ($1, 2400, 'gcash', '1023', $2) returning payment_id`, [b.bill_id, `${ids.ben}/oct.webp`])).rows[0].payment_id;
+      const p1 = await pay();
+      eq((await bill('ben')).status, 'pending', 'pending after proof');
+      eq((await as(ids.owner, `select * from public.verify_payment($1, false)`, [p1])).rows[0].payment_status, 'rejected', 'rejected');
+      eq((await bill('ben')).status, 'unpaid', 'unpaid after reject');
+      const v = (await as(ids.owner, `select * from public.verify_payment($1, true)`, [await pay()])).rows[0];
+      eq(v.receipt_number, 'OR-000013', 'next OR number'); eq((await bill('ben')).status, 'paid', 'paid');
+    },
+    'M6 refresh_overdue marks unpaid bills past the due date only, and a proof turns an overdue bill pending': async () => {
+      await db.query(`update public.billing_settings set due_day = 25`);
+      await ganna(); // October bills, due Oct 25
+      const a = await bill('anna');
+      await as(ids.anna, `insert into public.payments (bill_id, amount, method) values ($1, 100, 'cash')`, [a.bill_id]); // anna: pending
+      eq((await as(ids.owner, `select public.refresh_overdue('2026-10-25') as n`)).rows[0].n, 0, 'on the due day: not overdue');
+      eq((await as(ids.owner, `select public.refresh_overdue('2026-10-26') as n`)).rows[0].n, 2, 'ben and carl after the due day');
+      eq((await bill('ben')).status, 'overdue', 'ben overdue'); eq((await bill('anna')).status, 'pending', 'pending stays pending');
+      eq((await as(ids.owner, `select public.refresh_overdue('2026-10-26') as n`)).rows[0].n, 0, 'runs twice safely');
+      await as(ids.ben, `insert into public.payments (bill_id, amount, method) values ($1, 2400, 'cash')`, [(await bill('ben')).bill_id]);
+      eq((await bill('ben')).status, 'pending', 'overdue bill with a payment is pending');
+    },
+    'M6 the owner lists every bill; a tenant sees only their own bills, payments and receipts': async () => {
+      await ganna();
+      const b = await bill('ben');
+      await as(ids.owner, `select * from public.record_payment($1, 2400, '2026-10-20', 'cash')`, [b.bill_id]);
+      eq((await as(ids.owner, `select * from public.monthly_bills`)).rowCount, 3, 'owner bills');
+      eq((await as(ids.carl, `select * from public.monthly_bills`)).rowCount, 1, 'carl bills');
+      eq((await as(ids.carl, `select * from public.payments`)).rowCount, 0, 'carl payments');
+      eq((await as(ids.carl, `select * from public.receipts`)).rowCount, 0, 'carl receipts');
+      eq((await as(ids.ben, `select * from public.receipts`)).rowCount, 1, 'ben receipt');
     },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)

@@ -237,15 +237,17 @@ async function verify(paymentId, when) {
 
 // OR-000001: Maria, September.
 await verify(await gcash('maria.reyes', mariaSept, 1830, '2026-09-20 19:30'), '2026-09-20 21:00');
-// October paid, in receipt order. Carla is the 6th, so she gets OR-000007 on Oct 15.
+// October paid in cash, recorded by the owner (record_payment), in receipt order. Carla is the 6th,
+// so she gets OR-000007 on Oct 15. The month's only GCash proofs are then the 3 pending ones (Pay-A-Phone).
 const paid = TENANTS.filter((t) => t[5] === 'paid').map((t) => t[1]);
 const paidOrder = [...paid.filter((u) => u !== 'carla.diaz').slice(0, 5), 'carla.diaz', ...paid.filter((u) => u !== 'carla.diaz').slice(5)];
 for (const [i, username] of paidOrder.entries()) {
   const day = String(Math.min(15 + Math.floor(i / 3), 19)).padStart(2, '0');
-  const at = username === 'carla.diaz' ? '2026-10-15 20:10' : `2026-10-${day} 18:${String(10 + i).padStart(2, '0')}`;
-  const verifiedAt = username === 'carla.diaz' ? '2026-10-15 21:20' : `2026-10-${day} 21:${String(10 + i).padStart(2, '0')}`;
+  const at = username === 'carla.diaz' ? '2026-10-15 21:20' : `2026-10-${day} 21:${String(10 + i).padStart(2, '0')}`;
   const b = await billOf(username);
-  await verify(await gcash(username, b.bill_id, b.total_amount, at), verifiedAt);
+  const p = (await as(owner.uid, `select payment_id from public.record_payment($1, $2, $3::date, 'cash')`, [b.bill_id, b.total_amount, at.slice(0, 10)])).rows[0].payment_id;
+  await db.query(`update public.payments set created_at = $2, verified_at = $2 where payment_id = $1`, [p, `${at}${PH}`]);
+  await db.query(`update public.receipts set issued_at = $2 where payment_id = $1`, [p, `${at}${PH}`]);
 }
 // October pending: proofs sent, waiting for the owner.
 for (const [username, at] of [['maria.reyes', '2026-10-18 19:42'], ['luis.cruz', '2026-10-18 20:15'], ['ana.lim', '2026-10-19 07:05']]) {

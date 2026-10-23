@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import type { Page } from '@playwright/test';
 import { expectNoHorizontalScroll, login, restAsPageUser, samplePng, screen, storageUploadAsPageUser } from './helpers';
 
 // M5 Utility Billing (FR-019, FR-020, FR-021, FR-024, NFR-006). Flowchart page 6, design Util-A.

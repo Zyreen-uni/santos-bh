@@ -60,5 +60,15 @@ export async function downloadMonthProofs(
   supabase: SupabaseClient, month: string, onProgress?: (done: number, total: number) => void,
 ) {
   const zip = await buildMonthZip(supabase, month, onProgress);
-  saveFile(await zip.generateAsync({ type: 'blob' }), `gcash-proofs-${month.slice(0, 7)}.zip`);
+  saveFile(await zip.generateAsync({ type: 'blob' }), zipName(month));
+}
+
+// "santos-proofs-2026-10.zip" (Pay-A-Phone.html).
+export const zipName = (month: string) => `santos-proofs-${month.slice(0, 7)}.zip`;
+
+// The owner's list of GCash proofs for one month, or every month when month is null.
+export async function fetchProofFiles(supabase: SupabaseClient, month: string | null): Promise<ProofFile[]> {
+  const { data, error } = await supabase.rpc('proof_files', { p_month: month });
+  if (error) throw error;
+  return (data ?? []) as ProofFile[];
 }

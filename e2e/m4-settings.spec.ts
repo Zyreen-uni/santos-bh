@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import type { Page } from '@playwright/test';
 import { expectNoHorizontalScroll, login, restAsPageUser, screen } from './helpers';
 
 // M4 Settings (FR-022). Flowchart page 7, design Set-C. The widths share one database, so every test

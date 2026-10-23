@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M6
-Last green test count: 272 (71 unit, 78 db, 123 e2e)
+Current module: M7
+Last green test count: 317 (80 unit, 84 db, 153 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -104,6 +104,24 @@ Open problems: none
   A shrunk file still over 1 MB is refused in the browser; the bucket refuses it too.
 - Live split uses animated-number for whole-peso totals; shares with centavos show as text so they match the bill.
 
+## M6 plan (FR-007, FR-009, FR-011, FR-026)
+- Flowchart page 5: View Proof (Approve: "Payment Verified" + receipt; Reject: "Payment Rejected"), Search ("No Payment
+  Found", else the tenant's Payment History), Record Payment ("Invalid Input", "Payment Recorded"), Download GCash
+  Proofs (whole month ZIP with CSV, or one payment; "No Proofs for This Month"). Design Pay-A.
+- One row per tenant (Pay-A "All 27"): the oldest overdue bill, else the latest month's bill. Jose's September bill
+  shows instead of his October one, which is how the sample's tabs add up (27 = 3 + 12 + 1 + 11).
+- Overdue: the app shows an unpaid bill past its due date as Overdue at once (shownStatus in src/lib/payments.ts).
+  refresh_overdue(p_today) saves it; M16's daily cron calls it with the service role (owner may call it too).
+- Migration 20261025000000_payments.sql: record_payment() (owner, one transaction: payment + verify_payment +
+  receipt) and refresh_overdue(). Seed: October's 11 paid bills are cash recorded by the owner, so the month's GCash
+  proofs are the 3 pending ones (Pay-A-Phone: "3 proofs found, santos-proofs-2026-10.zip").
+- Test setup changed in M6 (see playwright.config.ts, e2e/fixtures.ts):
+  - each width has its own seed (setup projects seed-laptop -> laptop -> seed-tablet -> tablet -> seed-phone -> phone),
+    so approving payments in one width does not change the next one;
+  - the page's Date is shifted to Oct 20, 2026 10:00 PH (shiftClock). Playwright's page.clock froze motion
+    animations (dialogs stayed at opacity 0), so only Date is shifted; performance.now stays real.
+  - screenshots with a popup open are viewport-sized (a full-page capture of a long page lost the popup).
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -116,3 +134,4 @@ Open problems: none
 - M3 Manage Tenants and Tenant Manager: tenants by room, search, add/edit/move, mark inactive, Create Login, Assign Manager; migrations for room rules and the owner-created login link (real bug fixed). 204 tests. Review PASS after 2 added db checks.
 - M4 Settings: rent and due day pickers, Change Monthly Rent? confirm with months from the latest bills, cn() radius tokens fix. 232 tests. Review PASS.
 - M5 Utility Billing: one form for owner and manager with live split and bill photos, read-only for other tenants, room_occupancy()/manager_name() migration. 272 tests. Review PASS after tablet/phone layout fixes.
+- M6 Manage Payments: tabs with counts, View Proof approve/reject, Record Payment, history search, ZIP/one-proof downloads, record_payment/refresh_overdue migration; per-width seeds and Date-shift clock for e2e. 317 tests. Review PASS. M7 todo: record_payment refuses overpayment (review suggestion).
