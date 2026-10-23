@@ -26,6 +26,9 @@
   --color-warn-bg: #fff4dc;
   --color-bad: #b42318;
   --color-bad-bg: #fdecea;
+  --color-badge: #f5b83d;
+  --color-tag-bg: #ffe7a8;
+  --color-overlay: rgb(10 23 46 / 0.5);
 
   --radius-card: 24px;
   --radius-card-lg: 28px;

@@ -14,6 +14,6 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss(), apiDevServer()],
     resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
-    server: { port: 5173, strictPort: true },
+    server: { port: 5317, strictPort: true },
   };
 });
