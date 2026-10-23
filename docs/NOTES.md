@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M7
-Last green test count: 317 (80 unit, 84 db, 153 e2e incl. 3 seed steps)
+Current module: M8
+Last green test count: 341 (84 unit, 89 db, 168 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -122,6 +122,17 @@ Open problems: none
     animations (dialogs stayed at opacity 0), so only Date is shifted; performance.now stays real.
   - screenshots with a popup open are viewport-sized (a full-page capture of a long page lost the popup).
 
+## M7 plan (FR-013)
+- Flowchart page 8: click a concern, Reply ("Please Enter a Response" when empty, else "Response Sent"), Update
+  Status (Pending, In Progress, Resolved; "Status Updated"), Back. Design Con-B: inbox list, chat-style conversation,
+  status menu on top. Tablet/phone: list with status tabs, a concern opens the details with Back.
+- Migration 20261026000000_concern_messages.sql: concern_messages (the conversation in Con-B; concerns has only one
+  admin_response). Triggers set the author from the login (no faking the owner), make the details the first message,
+  and copy the owner's latest reply to concerns.admin_response/responded_at. RLS: owner all, tenant own; no edits or
+  deletes; logged like every other record. owner_name() gives tenants the owner's name for the chat (M13).
+- Same migration: record_payment refuses an amount above the bill balance (M6 review suggestion).
+- Seed: C-0011 has the Con-B conversation (4 messages, the last one Oct 20, 6:31 AM).
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -135,3 +146,4 @@ Open problems: none
 - M4 Settings: rent and due day pickers, Change Monthly Rent? confirm with months from the latest bills, cn() radius tokens fix. 232 tests. Review PASS.
 - M5 Utility Billing: one form for owner and manager with live split and bill photos, read-only for other tenants, room_occupancy()/manager_name() migration. 272 tests. Review PASS after tablet/phone layout fixes.
 - M6 Manage Payments: tabs with counts, View Proof approve/reject, Record Payment, history search, ZIP/one-proof downloads, record_payment/refresh_overdue migration; per-width seeds and Date-shift clock for e2e. 317 tests. Review PASS. M7 todo: record_payment refuses overpayment (review suggestion).
+- M7 Manage Concerns: inbox, chat conversation, reply and status with flowchart popups; concern_messages migration with RLS, owner_name(), record_payment balance check. 341 tests. Review PASS after removing an unused helper.

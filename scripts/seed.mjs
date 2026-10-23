@@ -71,7 +71,8 @@ const ANNOUNCEMENTS = [
 ];
 
 // Concerns in id order, so they get C-0001 to C-0012.
-// [username, subject, details, created, status, response, responded]
+// [username, subject, details, created, status, response, responded] or, for a conversation (Con-B.html),
+// [username, subject, details, created, status, [[owner|tenant, message, sent], ...]]
 const CONCERNS = [
   ['rina.flores', 'Loose cabinet door', 'The cabinet door near my bed is loose.', '2026-06-10 18:00', 'resolved', 'Fixed the hinge today.', '2026-06-12 09:00'],
   ['luis.cruz', 'No hot water', 'The water heater in the CR does not turn on.', '2026-07-03 07:10', 'resolved', 'The heater fuse is replaced.', '2026-07-04 10:00'],
@@ -83,7 +84,11 @@ const CONCERNS = [
   ['kim.bautista', 'Clogged drain', 'The CR drain is clogged.', '2026-09-28 07:20', 'resolved', 'The drain is cleared.', '2026-09-29 10:00'],
   ['jose.tan', 'Door lock is stuck', 'The door lock of Room 202 is hard to open.', '2026-10-05 18:40', 'resolved', 'The lock is replaced. Get your new key from me.', '2026-10-06 09:00'],
   ['luis.cruz', 'Light bulb not working', 'The light bulb above bed 2 does not turn on.', '2026-10-12 20:00', 'resolved', 'New bulb installed.', '2026-10-13 08:00'],
-  ['maria.reyes', 'Broken bed ladder', 'The ladder of bed 3 has a loose step. It moves when we climb up.', '2026-10-16 18:10', 'in_progress', 'Thanks Maria. Please avoid bed 3 for now. The new step arrives on Oct 21. I will install it that afternoon.', '2026-10-20 06:31'],
+  ['maria.reyes', 'Broken bed ladder', 'The ladder of bed 3 has a loose step. It moves when we climb up.', '2026-10-16 18:10', 'in_progress', [
+    ['owner', 'Thanks Maria. Please avoid bed 3 for now. I will buy a new step tomorrow.', '2026-10-17 08:02'],
+    ['tenant', 'Okay po. Kim moved to bed 5 for now.', '2026-10-17 09:15'],
+    ['owner', 'The new step arrives on Oct 21. I will install it that afternoon.', '2026-10-20 06:31'],
+  ]],
   ['ana.lim', 'Leaking faucet in CR', 'The faucet in the CR keeps dripping.', '2026-10-18 15:02', 'pending', null, null],
 ];
 
@@ -258,13 +263,19 @@ for (const [username, at] of [['maria.reyes', '2026-10-18 19:42'], ['luis.cruz',
 // ---------------------------------------------------------------- concerns and announcements
 console.log('Adding concerns and announcements...');
 for (const [username, subject, details, created, status, response, responded] of CONCERNS) {
+  // The first message (the details) is made by the database when the concern is saved.
   const c = (await as(ids[username].uid, 'insert into public.concerns (tenant_id, subject, details) values ($1, $2, $3) returning concern_id',
     [ids[username].tenantId, subject, details])).rows[0].concern_id;
-  if (status !== 'pending') {
-    await as(owner.uid, `update public.concerns set status = $2, admin_response = $3, responded_at = $4, updated_at = $4 where concern_id = $1`,
-      [c, status, response, `${responded}${PH}`]);
-  }
   await db.query('update public.concerns set created_at = $2 where concern_id = $1', [c, `${created}${PH}`]);
+  await db.query('update public.concern_messages set created_at = $2 where concern_id = $1', [c, `${created}${PH}`]);
+  const replies = Array.isArray(response) ? response : response ? [['owner', response, responded]] : [];
+  for (const [who, body, sent] of replies) {
+    const m = (await as(who === 'owner' ? owner.uid : ids[username].uid,
+      'insert into public.concern_messages (concern_id, body) values ($1, $2) returning message_id', [c, body])).rows[0].message_id;
+    await db.query('update public.concern_messages set created_at = $2 where message_id = $1', [m, `${sent}${PH}`]);
+    if (who === 'owner') await db.query('update public.concerns set responded_at = $2 where concern_id = $1', [c, `${sent}${PH}`]);
+  }
+  if (status !== 'pending') await as(owner.uid, 'update public.concerns set status = $2, updated_at = now() where concern_id = $1', [c, status]);
 }
 for (const [title, message, status, at] of ANNOUNCEMENTS) {
   await as(owner.uid, `insert into public.announcements (title, message, status, published_at, created_at, updated_at)

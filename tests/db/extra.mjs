@@ -285,6 +285,51 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       eq((await as(ids.carl, `select * from public.receipts`)).rowCount, 0, 'carl receipts');
       eq((await as(ids.ben, `select * from public.receipts`)).rowCount, 1, 'ben receipt');
     },
+    // ---------------- M7 Manage Concerns (migration 20261026000000_concern_messages.sql)
+    'M7 a new concern starts its conversation; the owner reply shows for the tenant and fills admin_response': async () => {
+      const c = (await as(ids.ben, `insert into public.concerns (tenant_id, subject, details) values ($1, 'Leak', 'The sink leaks.') returning concern_id`, [ids.t_ben])).rows[0].concern_id;
+      let msgs = (await as(ids.ben, `select body, from_owner, author_id from public.concern_messages where concern_id = $1 order by message_id`, [c])).rows;
+      eq(msgs.length, 1, 'first message'); eq(msgs[0].body, 'The sink leaks.', 'details'); eq(msgs[0].from_owner, false, 'from tenant'); eq(msgs[0].author_id, ids.ben, 'author');
+      await as(ids.owner, `insert into public.concern_messages (concern_id, body) values ($1, '  I will fix it today.  ')`, [c]);
+      msgs = (await as(ids.ben, `select body, from_owner from public.concern_messages where concern_id = $1 order by message_id`, [c])).rows;
+      eq(msgs.length, 2, 'tenant sees the reply'); eq(msgs[1].body, 'I will fix it today.', 'trimmed reply'); eq(msgs[1].from_owner, true, 'from owner');
+      const concern = (await db.query(`select admin_response, responded_at from public.concerns where concern_id = $1`, [c])).rows[0];
+      eq(concern.admin_response, 'I will fix it today.', 'admin_response'); eq(concern.responded_at !== null, true, 'responded_at');
+      await as(ids.ben, `insert into public.concern_messages (concern_id, body) values ($1, 'Thank you po.')`, [c]);
+      eq((await db.query(`select admin_response from public.concerns where concern_id = $1`, [c])).rows[0].admin_response, 'I will fix it today.', 'tenant reply does not change admin_response');
+    },
+    'M7 an empty response and someone else\'s conversation are refused; nobody fakes the owner': async () => {
+      const c = (await as(ids.ben, `insert into public.concerns (tenant_id, subject, details) values ($1, 'Leak', 'Sink') returning concern_id`, [ids.t_ben])).rows[0].concern_id;
+      await denied(ids.owner, `insert into public.concern_messages (concern_id, body) values ($1, '   ')`, [c]);
+      await denied(ids.anna, `insert into public.concern_messages (concern_id, body) values ($1, 'Not mine')`, [c]);
+      eq((await as(ids.anna, `select * from public.concern_messages where concern_id = $1`, [c])).rowCount, 0, 'anna cannot read it');
+      await as(ids.ben, `insert into public.concern_messages (concern_id, body, from_owner, author_id) values ($1, 'Fake owner', true, $2)`, [c, ids.owner]);
+      const m = (await db.query(`select from_owner, author_id from public.concern_messages where body = 'Fake owner'`)).rows[0];
+      eq(m.from_owner, false, 'not from owner'); eq(m.author_id, ids.ben, 'author is ben');
+      eq((await as(ids.ben, `update public.concern_messages set body = 'x'`)).rowCount, 0, 'no edits');
+      eq((await as(ids.owner, `delete from public.concern_messages`)).rowCount, 0, 'no deletes');
+    },
+    'M7 a status change is logged with the old and new status': async () => {
+      const c = (await as(ids.ben, `insert into public.concerns (tenant_id, subject, details) values ($1, 'Leak', 'Sink') returning concern_id`, [ids.t_ben])).rows[0].concern_id;
+      await as(ids.owner, `update public.concerns set status = 'in_progress', updated_at = now() where concern_id = $1`, [c]);
+      const log = (await db.query(`select actor_name, old_data, new_data, tenant_id from public.activity_logs where table_name = 'concerns' and record_id = $1 and action = 'update'`, [String(c)])).rows;
+      eq(log.length, 1, 'one log'); eq(log[0].old_data.status, 'pending', 'old'); eq(log[0].new_data.status, 'in_progress', 'new');
+      eq(log[0].actor_name, 'owner', 'by owner'); eq(log[0].tenant_id, ids.t_ben, 'about ben');
+      eq((await as(ids.ben, `select * from public.activity_logs where table_name = 'concern_messages'`)).rowCount, 1, 'ben sees his message log');
+    },
+    'M7 owner_name gives signed-in users the owner name only, and nothing to visitors': async () => {
+      await db.query(`update auth.users set raw_user_meta_data = '{"full_name": "Brian Santos"}' where id = $1`, [ids.owner]);
+      eq((await as(ids.ben, `select public.owner_name() as n`)).rows[0].n, 'Brian Santos', 'ben sees the owner name');
+      await denied(null, `select public.owner_name()`);
+    },
+    'M7 record_payment refuses an amount above the balance (M6 review)': async () => {
+      const b = await ganna();
+      const err = await denied(ids.owner, `select * from public.record_payment($1, 2400.01, '2026-10-20', 'cash')`, [b.bill_id]);
+      eq(err.message, 'The amount is more than the balance of this bill', 'message');
+      await as(ids.owner, `select * from public.record_payment($1, 1000, '2026-10-20', 'cash')`, [b.bill_id]);
+      await denied(ids.owner, `select * from public.record_payment($1, 1400.01, '2026-10-20', 'cash')`, [b.bill_id]);
+      eq((await as(ids.owner, `select * from public.record_payment($1, 1400, '2026-10-20', 'cash')`, [b.bill_id])).rows[0].bill_status, 'paid', 'the exact balance is fine');
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');
