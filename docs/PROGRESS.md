@@ -4,7 +4,7 @@ Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>
 
 - [x] M0 Setup and the gate
 - [x] M1 Login, Register and the app shell
-- [ ] M2 Manage Rooms
+- [x] M2 Manage Rooms
 - [ ] M3 Manage Tenants and Tenant Manager
 - [ ] M4 Settings
 - [ ] M5 Utility Billing

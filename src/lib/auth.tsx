@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -68,13 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     staleTime: 60_000,
   });
 
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
   const value: AuthState = {
     session,
     account: session ? (account.data ?? null) : null,
     loading: !sessionLoaded || (!!session && account.isPending),
-    signOut: async () => {
-      await supabase.auth.signOut();
-    },
+    signOut,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

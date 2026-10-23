@@ -83,7 +83,8 @@ describe('LoginPage', () => {
     loadAccount.mockResolvedValueOnce({ role: 'tenant', status: 'inactive' });
     renderLogin();
     await fillAndSubmit('tony.bernardo', 'secret-pass');
-    expect(await screen.findByRole('dialog')).toHaveTextContent('This account is inactive');
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Account Inactive');
+    expect(screen.getByRole('dialog')).toHaveTextContent('This account is inactive');
     expect(signOut).toHaveBeenCalled();
   });
 

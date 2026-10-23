@@ -34,3 +34,25 @@ export async function login(page: Page, username: string, password = passwordFor
 export async function openMenu(page: Page, info: TestInfo) {
   if (info.project.name === 'phone') await page.getByRole('button', { name: 'Open menu' }).click();
 }
+
+// Local Supabase URL and public anon key from .env.local (written by npm run seed).
+function localEnv() {
+  const text = readFileSync('.env.local', 'utf8');
+  return Object.fromEntries(text.split(/\r?\n/).filter((l) => l.includes('=') && !l.startsWith('#')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+}
+
+// Calls the REST API straight, with the signed-in user's own access token from the page,
+// to prove row level security refuses what the UI hides.
+export async function restAsPageUser(page: Page, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, data?: unknown) {
+  const token = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((k) => k.endsWith('-auth-token'));
+    return key ? (JSON.parse(localStorage.getItem(key)!).access_token as string) : '';
+  });
+  expect(token).toBeTruthy();
+  const env = localEnv();
+  return page.request.fetch(`${env.VITE_SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: { apikey: env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    data,
+  });
+}

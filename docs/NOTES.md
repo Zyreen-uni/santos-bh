@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M2
-Last green test count: 118 (33 unit, 52 db, 33 e2e)
+Current module: M3
+Last green test count: 157 (43 unit, 57 db, 57 e2e)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -32,6 +32,8 @@ Open problems: none
   checked by tsc. Small edits only: `JSX.IntrinsicElements` -> `React.JSX.IntrinsicElements` (React 19 types);
   disclosure.tsx typed props, Space key fixed (upstream checked `''`), merged className no longer overwritten by the
   props spread; every `any` replaced (usePreventScroll `unknown[]`, animated-background typed `ChildProps`).
+  dialog.tsx (M2): opens from a callback ref, because the portal mounts the <dialog> after the Dialog effect, so a
+  dialog rendered already open never called showModal(). Popups on a phone are bottom sheets (PHONE_SHEET in Modal.tsx).
 
 ## M1 plan (FR-016, FR-005 register, NFR-003)
 - Flowchart page 1: errors are a popup with OK that loops back: "Invalid Username or Password" (login) and
@@ -45,6 +47,21 @@ Open problems: none
   focus trap and Escape come free). Active pill with animated-background. Pages not built yet show their page header
   only; their modules fill them. Logout signs out at once; M15 adds the confirm popup.
 
+## M2 plan (FR-001, FR-002, FR-003)
+- Flowchart page 3: Add, View, Edit, Deactivate. Messages: "Invalid Input", "Room Added Successfully",
+  "Room Updated Successfully", "Deactivate this room?" (Yes/No), "Room Deactivated".
+- Design Rooms-B: cards grouped by building (animated-group), Edit Room popup (Room #, Building, Rent read-only
+  "set in Settings", Capacity, Status), phone: rooms by building in a disclosure, a card opens the room sheet
+  (Rent per tenant, Occupants, Available Slots, occupant names, Back, Edit).
+- Occupancy = current room_assignments (date_ended null) whose tenant is active. Rent per tenant from billing_settings.
+- Shown status: Inactive if rooms.status is inactive, else Occupied when it has tenants, else Available. The stored
+  available/occupied value is not kept in sync by the database, so the page derives it (the Edit form still offers the
+  three statuses from the design; choosing Inactive there is the same as Deactivate).
+- A room with tenants cannot be deactivated or set below its occupant count: "Move its tenants first" (keeps billing
+  right; the flowchart's Yes/No confirm is shown only when the room is empty).
+- Validation (one check, loops back): Room # 1-10 letters/numbers, Building chosen, Capacity whole number 1 to 8 and
+  not below the occupants, Room # not already used.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -53,3 +70,4 @@ Open problems: none
 ## Log
 - M0 Setup and the gate: Vite/React/TS/Tailwind v4 scaffold, local Supabase (ports 5532x), 52 db checks on real Supabase, api dev plugin, seed, 7 motion primitives, gate proven. 67 tests. Review PASS.
 - M1 Login, Register and the app shell: auth provider, role routing and guards, Login/Register with flowchart popups, sidebar/rail/phone sheet with animated pill. 118 tests. Review PASS. Follow-ups for M2: RequireRole signOut in render, Login popup title per case.
+- M2 Manage Rooms: rooms by building, add/edit/view/deactivate with flowchart popups, derived status, 5 db checks. 157 tests. Review PASS. M3 todo: database trigger for room capacity and deactivating rooms with tenants.

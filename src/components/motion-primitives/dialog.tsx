@@ -213,7 +213,12 @@ function DialogContent({ children, className, container }: DialogContentProps) {
       {isOpen && (
         <motion.dialog
           key={ids.dialog}
-          ref={dialogRef as React.RefObject<HTMLDialogElement>}
+          // Open as soon as the element exists. The portal mounts it after the Dialog's own effect
+          // ran, so a dialog that starts open would otherwise never call showModal().
+          ref={(el: HTMLDialogElement | null) => {
+            dialogRef.current = el;
+            if (el && isOpen && !el.open) el.showModal();
+          }}
           id={ids.dialog}
           aria-labelledby={ids.title}
           aria-describedby={ids.description}

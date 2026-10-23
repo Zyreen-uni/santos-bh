@@ -12,20 +12,25 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  // Wrong credentials use the flowchart's title; other problems get their own.
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError('Enter your username and password.');
+      setError({ title: 'Invalid Username or Password', message: 'Enter your username and password.' });
       return;
     }
     setBusy(true);
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail(username.trim()), password });
     if (authError || !data.session) {
       setBusy(false);
-      setError(authError?.status === 400 || !authError ? 'Check your username and password, then try again.' : authError.message);
+      setError(
+        authError?.status === 400 || !authError
+          ? { title: 'Invalid Username or Password', message: 'Check your username and password, then try again.' }
+          : { title: 'Login Failed', message: authError.message },
+      );
       return;
     }
     try {
@@ -33,14 +38,14 @@ export default function LoginPage() {
       if (acc.status !== 'active') {
         await supabase.auth.signOut();
         setBusy(false);
-        setError('This account is inactive. Ask the owner for help.');
+        setError({ title: 'Account Inactive', message: 'This account is inactive. Ask the owner for help.' });
         return;
       }
       navigate(homeFor(acc), { replace: true });
     } catch (err) {
       await supabase.auth.signOut();
       setBusy(false);
-      setError(err instanceof Error ? err.message : 'Could not open your account. Try again.');
+      setError({ title: 'Login Failed', message: err instanceof Error ? err.message : 'Could not open your account. Try again.' });
     }
   }
 
@@ -58,13 +63,7 @@ export default function LoginPage() {
         onChange={(e) => setPassword(e.target.value)}
       />
       <SubmitButton busy={busy}>Login</SubmitButton>
-      <MessageDialog
-        open={!!error}
-        onClose={() => setError('')}
-        tone="bad"
-        title="Invalid Username or Password"
-        message={error}
-      />
+      <MessageDialog open={!!error} onClose={() => setError(null)} tone="bad" title={error?.title ?? ''} message={error?.message} />
     </AuthCard>
   );
 }

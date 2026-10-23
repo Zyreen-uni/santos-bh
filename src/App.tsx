@@ -8,9 +8,12 @@ import RegisterPage from '@/pages/RegisterPage';
 import MenuPage from '@/pages/MenuPage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import TenantDashboard from '@/pages/tenant/TenantDashboard';
+import RoomsPage from '@/pages/admin/RoomsPage';
 
 // Pages with their own component. Menu items not listed here use MenuPage until their module.
-const ADMIN_PAGES: Record<string, ReactNode> = {};
+const ADMIN_PAGES: Record<string, ReactNode> = {
+  '/admin/rooms': <RoomsPage />,
+};
 const TENANT_PAGES: Record<string, ReactNode> = {};
 
 // The app opens on Login (no landing page). Role decides /admin or /tenant.

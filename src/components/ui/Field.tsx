@@ -1,4 +1,4 @@
-import { useId, useState, type InputHTMLAttributes } from 'react';
+import { useId, useState, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,30 @@ export function TextField({ label, className, id, ...input }: FieldProps) {
         {label}
       </label>
       <input id={inputId} className={cn(inputClass, 'min-w-0')} {...input} />
+    </div>
+  );
+}
+
+type SelectProps = { label: string; className?: string; options: { value: string; label: string }[] } & Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  'className'
+>;
+
+export function SelectField({ label, className, id, options, ...select }: SelectProps) {
+  const autoId = useId();
+  const selectId = id ?? autoId;
+  return (
+    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
+      <label htmlFor={selectId} className="text-sm font-semibold text-label">
+        {label}
+      </label>
+      <select id={selectId} className={cn(inputClass, 'min-w-0 cursor-pointer')} {...select}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
