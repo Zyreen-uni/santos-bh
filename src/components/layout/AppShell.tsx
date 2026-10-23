@@ -52,11 +52,11 @@ function SidebarNav({ menu, active, badges, managerTag, onLogout, label }: NavPr
               active?.to === item.to ? 'font-bold text-navy' : 'font-semibold text-sidebar-text hover:bg-white/10',
             )}
           >
-            <span className="flex w-full items-center gap-3">
-              <item.icon size={20} aria-hidden />
+            <span className="flex w-full items-center gap-2.5 whitespace-nowrap">
+              <item.icon size={20} aria-hidden className="shrink-0" />
               {item.label}
               {item.label === 'Utility Billing' && managerTag && (
-                <span className="ml-auto rounded-full bg-tag-bg px-2 py-0.5 text-[11px] font-bold text-warn">Manager</span>
+                <span className="ml-auto rounded-full bg-tag-bg px-1.5 py-0.5 text-[11px] font-bold text-warn">Manager</span>
               )}
               {!!badges[item.to] && (
                 <span className="ml-auto rounded-full bg-badge px-[9px] py-0.5 text-xs font-bold text-navy" aria-label={`${badges[item.to]} pending`}>

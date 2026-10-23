@@ -7,7 +7,7 @@ Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>
 - [x] M2 Manage Rooms
 - [x] M3 Manage Tenants and Tenant Manager
 - [x] M4 Settings
-- [ ] M5 Utility Billing
+- [x] M5 Utility Billing
 - [ ] M6 Manage Payments
 - [ ] M7 Manage Concerns, admin
 - [ ] M8 Manage Announcements, admin

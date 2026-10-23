@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import sharp from 'sharp';
 import { expect, type Page, type TestInfo } from '@playwright/test';
 
 // Saves a full-page screenshot to reports/screens/<module id>/<name>-<laptop|tablet|phone>.png
@@ -55,4 +56,22 @@ export async function restAsPageUser(page: Page, method: 'GET' | 'POST' | 'PATCH
     headers: { apikey: env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     data,
   });
+}
+
+// Uploads straight to Supabase Storage with the signed-in user's token, to check the bucket rules.
+export async function storageUploadAsPageUser(page: Page, bucket: string, path: string, body: Buffer, contentType = 'image/webp') {
+  const token = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((k) => k.endsWith('-auth-token'));
+    return key ? (JSON.parse(localStorage.getItem(key)!).access_token as string) : '';
+  });
+  const env = localEnv();
+  return page.request.post(`${env.VITE_SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
+    headers: { apikey: env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': contentType, 'x-upsert': 'true' },
+    data: body,
+  });
+}
+
+// A real PNG made on the spot (a picture of a bill), for "attach a photo" steps.
+export function samplePng(width = 600, height = 800) {
+  return sharp({ create: { width, height, channels: 3, background: { r: 240, g: 244, b: 250 } } }).png().toBuffer();
 }

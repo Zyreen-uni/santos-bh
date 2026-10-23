@@ -5,11 +5,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const MAX_UPLOAD_BYTES = 1024 * 1024;
 
+// The buckets refuse files over 1 MB (NFR-006). Say so in plain words before the upload fails.
+export function assertUploadSize(file: Blob) {
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error('The photo is still over 1 MB after shrinking. Choose a smaller photo.');
+}
+
 export async function shrinkPhoto(file: File, maxSide = 1280): Promise<File> {
   const small = await imageCompression(file, {
     maxWidthOrHeight: maxSide, maxSizeMB: 0.3, fileType: 'image/webp', initialQuality: 0.75, useWebWorker: true,
   });
-  return new File([small], file.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' });
+  const out = new File([small], file.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' });
+  assertUploadSize(out);
+  return out;
 }
 
 // Tenant: upload a GCash proof to the tenant's own folder. Returns the path to save on the payment.

@@ -1,6 +1,6 @@
 // Database checks added by later modules (new migrations or module checks). They run after the
 // 52 reference checks, with the same seed, inside the same rolled-back transaction.
-export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS }) {
+export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill }) {
   return {
     // ---------------- M2 Manage Rooms
     'M2 owner adds, edits and deactivates a room': async () => {
@@ -172,6 +172,61 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS }) {
       eq(nov.rent_share, '1600.00', 'November uses 1600'); eq(nov.total_amount, '2500.00', 'November total 1600 + 600 + 300');
       const log = (await db.query(`select old_data, new_data, actor_name from public.activity_logs where table_name = 'billing_settings' order by log_id desc limit 1`)).rows[0];
       eq(log.old_data.monthly_rent, 1500, 'old rent logged'); eq(log.new_data.monthly_rent, 1600, 'new rent logged'); eq(log.actor_name, 'owner', 'by owner');
+    },
+    // ---------------- M5 Utility Billing
+    'M5 room_occupancy gives every signed-in user the active count per room, and nothing to visitors': async () => {
+      const counts = async (uid) => Object.fromEntries((await as(uid, `select room_id, active_tenants from public.room_occupancy()`)).rows.map((r) => [r.room_id, r.active_tenants]));
+      const ben = await counts(ids.ben);
+      eq(ben[ids.r101], 2, '101'); eq(ben[ids.r201], 1, '201'); eq(ben[ids.r203], 0, '203');
+      eq(JSON.stringify(await counts(ids.owner)), JSON.stringify(ben), 'same for the owner');
+      await db.query(`update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_ben]);
+      eq((await counts(ids.anna))[ids.r101], 1, 'inactive tenant left out');
+      await denied(null, `select * from public.room_occupancy()`);
+    },
+    'M5 manager_name gives every signed-in user the manager name only, and nothing to visitors': async () => {
+      eq((await as(ids.carl, `select public.manager_name() as n`)).rows[0].n, 'ANNA', 'carl sees the manager name');
+      await db.query(`update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_anna]);
+      eq((await as(ids.carl, `select public.manager_name() as n`)).rows[0].n, null, 'no manager after inactive');
+      await denied(null, `select public.manager_name()`);
+    },
+    'M5 an empty room makes no electric bill and no tenant bill': async () => {
+      const r = await saveBills(ids.anna, ROOMS());
+      eq(r.rows[0].n, 3, 'three bills');
+      eq((await db.query(`select count(*)::int as n from public.utility_bills where room_id = $1`, [ids.r203])).rows[0].n, 0, 'no utility row for 203');
+      eq((await db.query(`select count(*)::int as n from public.monthly_bills where room_id = $1`, [ids.r203])).rows[0].n, 0, 'no tenant bill in 203');
+    },
+    'M5 the October sample gives the exact shares from docs/sample-data.md': async () => {
+      // 27 tenants: 101 (7), 102 (6), 201 (8), 202 (6). The 4 reference tenants count, so add 23 more.
+      const want = { [ids.r101]: 7, [ids.r102]: 6, [ids.r201]: 8, [ids.r202]: 6 };
+      const have = { [ids.r101]: 2, [ids.r102]: 0, [ids.r201]: 1, [ids.r202]: 0 };
+      for (const [room, n] of Object.entries(want)) {
+        for (let i = have[room]; i < n; i++) {
+          const t = (await db.query(`insert into public.tenants (full_name, contact_number) values ($1, '0917') returning tenant_id`, [`S${room}-${i}`])).rows[0].tenant_id;
+          await db.query(`insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [t, room]);
+        }
+      }
+      await db.query(`update public.billing_settings set due_day = 25`);
+      const rooms = [[ids.r101, 1960], [ids.r102, 1800], [ids.r201, 2400], [ids.r202, 1560]].map(([room_id, amount]) => ({ room_id, amount, photo_path: `2026-10/room-${room_id}.webp` }));
+      const n = (await as(ids.anna, `select public.save_utility_bills('2026-10-01', 810, '2026-10/rest-house.webp', $1::jsonb) as n`, [JSON.stringify(rooms)])).rows[0].n;
+      eq(n, 27, '27 October bills');
+      const shares = (await db.query(`select room_id, electric_share, water_share, total_amount, due_date from public.monthly_bills where billing_month = '2026-10-01'`)).rows;
+      const by = Object.fromEntries(shares.map((s) => [s.room_id, s]));
+      eq(by[ids.r101].electric_share, '280.00', '101 electric 1960 / 7'); eq(by[ids.r101].total_amount, '1810.00', 'Luis 1810');
+      eq(by[ids.r102].electric_share, '300.00', '102 electric 1800 / 6'); eq(by[ids.r102].total_amount, '1830.00', 'Maria 1830');
+      eq(by[ids.r201].electric_share, '300.00', '201 electric 2400 / 8'); eq(by[ids.r201].total_amount, '1830.00', 'Ana 1830');
+      eq(by[ids.r202].electric_share, '260.00', '202 electric 1560 / 6'); eq(by[ids.r202].total_amount, '1790.00', '202 total');
+      eq(new Set(shares.map((s) => s.water_share)).size === 1 && shares[0].water_share === '30.00', true, 'water 810 / 27 = 30 each');
+      eq(shares[0].due_date.toISOString().slice(0, 10), '2026-10-25', 'due Oct 25');
+    },
+    'M5 owner correction updates the bills at once; a non-manager tenant cannot save or upload bill photos': async () => {
+      await saveBills(ids.anna, ROOMS());
+      await as(ids.owner, `select public.save_utility_bills('2026-10-01', 900, '2026-10/rest.jpg', $1::jsonb)`,
+        [JSON.stringify([{ room_id: ids.r101, amount: 1300, photo_path: '2026-10/101.jpg' }, { room_id: ids.r201, amount: 600, photo_path: '2026-10/201.jpg' }])]);
+      eq((await bill('ben')).electric_share, '650.00', 'corrected 1300 / 2');
+      eq((await db.query(`select entered_by from public.utility_bills where room_id = $1`, [ids.r101])).rows[0].entered_by, ids.owner, 'owner entered it');
+      await denied(ids.carl, `select public.save_utility_bills('2026-10-01', 900, '2026-10/rest.jpg', '[]')`);
+      await denied(ids.carl, `insert into storage.objects (bucket_id, name) values ('utility-bills', '2026-10/fake.webp')`);
+      eq((await as(ids.carl, `update public.utility_bills set amount = 1`)).rowCount, 0, 'tenant cannot correct a row');
     },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)

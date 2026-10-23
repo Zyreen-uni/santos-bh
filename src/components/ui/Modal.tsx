@@ -62,7 +62,7 @@ export function MessageDialog({
   onClose: () => void;
   title: string;
   message?: ReactNode;
-  tone: 'ok' | 'bad';
+  tone: 'ok' | 'bad' | 'warn';
 }) {
   const Icon = tone === 'ok' ? Check : X;
   return (
@@ -77,10 +77,14 @@ export function MessageDialog({
           <span
             className={cn(
               'flex size-16 items-center justify-center rounded-full',
-              tone === 'ok' ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad',
+              tone === 'ok' ? 'bg-ok-bg text-ok' : tone === 'warn' ? 'bg-warn-bg text-warn' : 'bg-bad-bg text-bad',
             )}
           >
-            <Icon size={32} strokeWidth={2.5} aria-hidden />
+            {tone === 'warn' ? (
+              <span aria-hidden className="text-[28px] font-extrabold">!</span>
+            ) : (
+              <Icon size={32} strokeWidth={2.5} aria-hidden />
+            )}
           </span>
           <DialogTitle className="m-0 text-[22px] font-extrabold text-navy">{title}</DialogTitle>
           {message && <DialogDescription className="m-0 text-[15px] leading-normal text-muted">{message}</DialogDescription>}

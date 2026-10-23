@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M5
-Last green test count: 232 (60 unit, 73 db, 99 e2e)
+Current module: M6
+Last green test count: 272 (71 unit, 78 db, 123 e2e)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -90,6 +90,20 @@ Open problems: none
 - Rent: a number above 0, at most 100,000, up to 2 decimals. Commas are allowed when typing ("1,600").
 - e2e tests change the rent and due day and put them back (1,500 and 25), because the widths share one database.
 
+## M5 plan (FR-019, FR-020, FR-021, FR-024, NFR-006)
+- Flowchart page 6: Enter Bills, Compute Bills, check "Amounts greater than 0 and photos attached?" (No: "Invalid Input"
+  naming the meter, OK loops back), shrink photos, save_utility_bills, "Monthly Bills Generated".
+- Design Util-A: one form, a row per room meter (amount, bill photo, "₱280 each" live split), the empty room says
+  "No active tenants, no bill needed", rest house row "Water pump, all 27 tenants", aside "Room 102 tenant pays".
+- One page for the owner (/admin/utility-billing) and tenants (/tenant/utility-billing). The manager and the owner edit;
+  other tenants get "For the Tenant Manager Only" (Ten-A-Phone-Carla) and then see the amounts and photos read-only
+  (FR-024). The popup's last line says the bills are on this page (the design said Payments, which has no such view).
+- Migration 20261024000000_room_occupancy.sql: room_occupancy() returns active counts per room (no names), because
+  RLS shows the manager only their own assignment.
+- Photos go through shrinkPhoto (1280 px WebP) to utility-bills/<YYYY-MM>/room-<number>.webp and rest-house.webp.
+  A shrunk file still over 1 MB is refused in the browser; the bucket refuses it too.
+- Live split uses animated-number for whole-peso totals; shares with centavos show as text so they match the bill.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -101,3 +115,4 @@ Open problems: none
 - M2 Manage Rooms: rooms by building, add/edit/view/deactivate with flowchart popups, derived status, 5 db checks. 157 tests. Review PASS. M3 todo: database trigger for room capacity and deactivating rooms with tenants.
 - M3 Manage Tenants and Tenant Manager: tenants by room, search, add/edit/move, mark inactive, Create Login, Assign Manager; migrations for room rules and the owner-created login link (real bug fixed). 204 tests. Review PASS after 2 added db checks.
 - M4 Settings: rent and due day pickers, Change Monthly Rent? confirm with months from the latest bills, cn() radius tokens fix. 232 tests. Review PASS.
+- M5 Utility Billing: one form for owner and manager with live split and bill photos, read-only for other tenants, room_occupancy()/manager_name() migration. 272 tests. Review PASS after tablet/phone layout fixes.
