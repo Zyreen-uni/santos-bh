@@ -9,6 +9,9 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
+  // Some checks drive two browsers (owner and tenant) and take 13 to 17 s; on a busy machine the default 30 s was
+  // not enough (M15 verify: M3 "manager swap" ran out at its last click). Only the time limit, never the checks.
+  timeout: 60_000,
   forbidOnly: true,
   reporter: [['list'], ['json', { outputFile: 'reports/e2e.json' }]],
   use: { baseURL: 'http://localhost:5317', trace: 'retain-on-failure' },

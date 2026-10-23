@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M15
-Last green test count: 478 (121 unit, 102 db, 255 e2e incl. 3 seed steps)
+Current module: M16
+Last green test count: 491 (125 unit, 102 db, 264 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -207,6 +207,19 @@ Open problems: none
 - Also: tests/unit/RegisterPage.test.tsx pastes field values instead of typing each key (the M13 reviewer saw it
   pass the 5 s limit under full parallel load). Same checks.
 
+## M15 plan (FR-016)
+- Flowchart page 15, design Out-A: "Are you sure you want to log out?" (logout icon on light blue, Cancel, Log Out),
+  then Login with the green "Logged Out Successfully" note (text-effect). src/components/LogoutConfirm.tsx is used by
+  the sidebar, rail and phone menu (AppShell) and the phone dashboard Logout tile.
+- The note is passed in sessionStorage, not router state: when the session ends, RequireRole opens Login and unmounts
+  the popup before its own navigate runs (tried router state first; the e2e showed no note). Login reads it once.
+- Back after logout: the guard sends a signed-out visitor to Login, so no protected page reopens.
+- First M15 verify: M3 "manager swap" (phone) hit the 30 s test limit at its last click; the trace showed every step
+  slower (whole run 31.8 min, usually 20.7). playwright.config.ts timeout is now 60 s. No check changed.
+- Review 1 FAIL, fixed: unit beforeEach clears sessionStorage; a failed sign-out shows "Could Not Log Out" (auth
+  signOut now throws on a Supabase error; RequireRole catches it) and leaves no note; vitest testTimeout 20 s (form
+  tests passed 5 s on the busy machine). RequireRole test mock returns a promise like the real signOut.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -228,3 +241,4 @@ Open problems: none
 - M12 My Payments: bill card, Submit GCash Proof (shrunk WebP, own folder, 1 MB bucket limit), receipts history, October utility bills with shares, owner GCash account in Settings; utility_entered()/gcash migration. 445 tests. Review PASS.
 - M13 My Concerns and Announcements: one page with tabs (address picks the tab), concern cards and conversation with reply, Submit Concern (C-00NN, Pending), published announcements list and post. No schema change. 461 tests. Review PASS.
 - M14 History Logs: table with filters (search, user, action, dates), Log Details with old and new values (popup below laptop), 50 rows per "Show more", tenant sees own records only; log_actors() migration; RegisterPage test pastes instead of typing. 478 tests. Review PASS.
+- M15 Logout: confirm popup (Out-A) from sidebar, rail, phone menu and dashboard tile; Login note "Logged Out Successfully" (text-effect, sessionStorage); "Could Not Log Out" on failure; test time limits 60 s e2e, 20 s unit. 491 tests. Review PASS after one FAIL.

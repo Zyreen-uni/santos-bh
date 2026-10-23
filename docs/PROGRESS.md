@@ -17,6 +17,6 @@ Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>
 - [x] M12 My Payments
 - [x] M13 My Concerns and Announcements
 - [x] M14 History Logs
-- [ ] M15 Logout
+- [x] M15 Logout
 - [ ] M16 Crons, backups and storage
 - [ ] M17 Final pass

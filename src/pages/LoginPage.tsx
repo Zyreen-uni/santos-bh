@@ -1,6 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router';
+import { Check } from 'lucide-react';
 import { AuthCard, SubmitButton } from '@/components/AuthCard';
+import { clearLoggedOutNote, hasLoggedOutNote } from '@/components/LogoutConfirm';
+import { TextEffect } from '@/components/motion-primitives/text-effect';
 import { PasswordField, TextField } from '@/components/ui/Field';
 import { MessageDialog } from '@/components/ui/Modal';
 import { supabase, loginEmail } from '@/lib/supabase';
@@ -10,6 +13,9 @@ import { homeFor, loadAccount, useAuth } from '@/lib/auth';
 export default function LoginPage() {
   const { account, loading } = useAuth();
   const navigate = useNavigate();
+  // Shown once: the page keeps it for this visit, and a reload or the next visit has no note.
+  const [loggedOut] = useState(hasLoggedOutNote);
+  useEffect(clearLoggedOutNote, []);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   // Wrong credentials use the flowchart's title; other problems get their own.
@@ -53,7 +59,22 @@ export default function LoginPage() {
   if (!loading && account && !busy) return <Navigate to={homeFor(account)} replace />;
 
   return (
-    <AuthCard active="login" onSubmit={onSubmit}>
+    <AuthCard
+      active="login"
+      onSubmit={onSubmit}
+      notice={
+        loggedOut && (
+          <div role="status" className="flex items-center gap-2.5 rounded-2xl bg-ok-bg px-4 py-3 text-[15px] font-bold text-ok">
+            <span aria-hidden className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ok text-white">
+              <Check size={16} strokeWidth={2.6} />
+            </span>
+            <TextEffect per="word" preset="fade" as="span">
+              Logged Out Successfully
+            </TextEffect>
+          </div>
+        )
+      }
+    >
       <h1 className="m-0 text-[26px] font-extrabold text-navy max-md:text-2xl">Welcome back</h1>
       <TextField label="Username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
       <PasswordField

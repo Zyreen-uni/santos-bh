@@ -10,6 +10,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/unit/**/*.test.{ts,tsx}'],
     setupFiles: ['tests/unit/setup.ts'],
+    // The default 5 s was not enough for the form tests when the machine is busy (M15 review). Time only.
+    testTimeout: 20_000,
     env: { VITE_SUPABASE_URL: 'http://127.0.0.1:54321', VITE_SUPABASE_ANON_KEY: 'test-anon-key' },
   },
 });

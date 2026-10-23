@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { LogOut, Menu, X } from 'lucide-react';
 import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
 import { Dialog, DialogContent, DialogTitle } from '@/components/motion-primitives/dialog';
+import { LogoutConfirm } from '@/components/LogoutConfirm';
 import { initials, useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -125,10 +126,10 @@ function RailNav({ menu, active, badges, onLogout, label }: NavProps & { label: 
 }
 
 export function AppShell({ role }: { role: 'admin' | 'tenant' }) {
-  const { account, signOut } = useAuth();
+  const { account } = useAuth();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [askLogout, setAskLogout] = useState(false);
   const menu = role === 'admin' ? ADMIN_MENU : TENANT_MENU;
   const label = role === 'admin' ? 'Admin menu' : 'Tenant menu';
   const pending = usePendingCount(role === 'admin');
@@ -137,10 +138,9 @@ export function AppShell({ role }: { role: 'admin' | 'tenant' }) {
     active: activeItem(menu, pathname),
     badges: role === 'admin' ? { '/admin/payments': pending.data } : {},
     managerTag: role === 'tenant' && !!account?.isManager,
-    onLogout: async () => {
+    onLogout: () => {
       setMenuOpen(false);
-      await signOut();
-      navigate('/login', { replace: true });
+      setAskLogout(true);
     },
   };
   const name = account?.fullName ?? '';
@@ -193,6 +193,7 @@ export function AppShell({ role }: { role: 'admin' | 'tenant' }) {
       <main className="min-w-0 flex-1 p-8 max-lg:px-6 max-lg:py-7 max-md:px-4 max-md:py-5">
         <Outlet />
       </main>
+      <LogoutConfirm open={askLogout} onCancel={() => setAskLogout(false)} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import type { Account } from '@/lib/auth';
 
 let state: { session: object | null; account: Partial<Account> | null; loading: boolean };
-const signOut = vi.fn();
+const signOut = vi.fn().mockResolvedValue(undefined); // like the real one: a promise
 vi.mock('@/lib/auth', async (orig) => ({
   ...(await orig<typeof import('@/lib/auth')>()),
   useAuth: () => ({ ...state, signOut }),

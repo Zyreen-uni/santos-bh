@@ -68,8 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     staleTime: 60_000,
   });
 
+  // Throws when Supabase could not end the session, so Logout can say so.
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   }, []);
   const value: AuthState = {
     session,

@@ -110,6 +110,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Cancel',
   danger,
+  icon,
   busy,
   onConfirm,
   onCancel,
@@ -120,6 +121,7 @@ export function ConfirmDialog({
   confirmLabel: string;
   cancelLabel?: string;
   danger?: boolean;
+  icon?: ReactNode; // in place of the "!" (Out-A.html: the logout icon on light blue)
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -133,8 +135,14 @@ export function ConfirmDialog({
         )}
       >
         <div className="flex flex-col items-center gap-3.5">
-          <span className={cn('flex size-16 items-center justify-center rounded-full text-[28px] font-extrabold', danger ? 'bg-bad-bg text-bad' : 'bg-warn-bg text-warn')} aria-hidden>
-            !
+          <span
+            className={cn(
+              'flex size-16 items-center justify-center rounded-full text-[28px] font-extrabold',
+              icon ? 'bg-soft-blue text-navy' : danger ? 'bg-bad-bg text-bad' : 'bg-warn-bg text-warn',
+            )}
+            aria-hidden
+          >
+            {icon ?? '!'}
           </span>
           <DialogTitle className="m-0 text-[22px] font-extrabold text-navy">{title}</DialogTitle>
           {message && <DialogDescription className="m-0 text-[15px] leading-normal text-muted">{message}</DialogDescription>}

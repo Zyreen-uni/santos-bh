@@ -1,9 +1,10 @@
-import { useId, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useId, useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { BedDouble, CreditCard, History, LogOut, Megaphone, MessageSquare, UserRound, Zap, type LucideIcon } from 'lucide-react';
 import { AnimatedGroup } from '@/components/motion-primitives/animated-group';
 import { PageHeader, longDate } from '@/components/layout/PageHeader';
+import { LogoutConfirm } from '@/components/LogoutConfirm';
 import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/lib/auth';
 import { CONCERN_STATUS, shortDay } from '@/lib/concerns';
@@ -118,8 +119,8 @@ function Tile({ to, icon: Icon, title, text, onClick }: { to?: string; icon: Luc
 
 // Tenant Dashboard (FR-017, FR-021). Flowchart page 10, design Ten-A, Ten-A-Phone (8 tiles).
 export default function TenantDashboard() {
-  const { account, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { account } = useAuth();
+  const [askLogout, setAskLogout] = useState(false);
   const query = useQuery({ queryKey: ['tenant-home'], queryFn: fetchTenantHome });
   const home = query.data;
   const first = account?.fullName.split(' ')[0] ?? '';
@@ -229,15 +230,13 @@ export default function TenantDashboard() {
                 icon={LogOut}
                 title="Logout"
                 text="Sign out"
-                onClick={async () => {
-                  await signOut();
-                  navigate('/login', { replace: true });
-                }}
+                onClick={() => setAskLogout(true)}
               />
             </AnimatedGroup>
           </div>
         </>
       )}
+      <LogoutConfirm open={askLogout} onCancel={() => setAskLogout(false)} />
     </>
   );
 }

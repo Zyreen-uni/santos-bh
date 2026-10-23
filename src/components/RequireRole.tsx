@@ -9,7 +9,8 @@ export function RequireRole({ role, children }: { role: 'admin' | 'tenant'; chil
   const inactive = !!account && account.status !== 'active';
 
   useEffect(() => {
-    if (inactive) void signOut();
+    // The page shows Login either way; a failed sign-out is tried again on the next visit.
+    if (inactive) signOut().catch(() => undefined);
   }, [inactive, signOut]);
 
   if (loading) {

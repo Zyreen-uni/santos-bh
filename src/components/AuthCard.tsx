@@ -8,11 +8,14 @@ export function AuthCard({
   active,
   onSubmit,
   wide,
+  notice,
   children,
 }: {
   active: 'login' | 'register';
   onSubmit: (e: FormEvent) => void;
   wide?: boolean;
+  notice?: ReactNode; // above the logo, such as "Logged Out Successfully" (Out-A-Phone.html)
+
   children: ReactNode;
 }) {
   const tab = (to: string, label: string, current: boolean) => (
@@ -37,6 +40,7 @@ export function AuthCard({
           wide ? 'max-w-[580px]' : 'max-w-[440px]',
         )}
       >
+        {notice}
         <img
           src="/santos-logo.png"
           alt="Santos Boarding House"
