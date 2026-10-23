@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M9
-Last green test count: 360 (88 unit, 92 db, 180 e2e incl. 3 seed steps)
+Current module: M10
+Last green test count: 373 (92 unit, 92 db, 189 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -141,6 +141,15 @@ Open problems: none
   cleared on draft); title and message are trimmed and a blank message is refused. Tenants never see drafts (RLS).
 - The list is newest first: published posts by their posted date, drafts by when they were saved.
 
+## M9 plan (FR-017)
+- Flowchart page 2, design Admin-A: tiles Total Rooms, Occupied, Available, Total Tenants, Pending Payments, Overdue;
+  Recent Concerns (3 newest, View all); Storage Used from storage_usage() with a warning at 80% of either limit;
+  Latest Announcement. Counts use animated-number, tiles animated-group.
+- Total Tenants = active tenants living in a room (a just-registered tenant with no room is not boarding yet).
+  Pending and Overdue use the same one-row-per-tenant rule as the Payments tabs, so both pages agree.
+- e2e: Pending/Overdue are checked against the Payments page in the same run (M6 tests in the same width change them);
+  the 80% warning is checked by mocking the storage_usage response (79% no warning, 80% and 85% warn).
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -156,3 +165,4 @@ Open problems: none
 - M6 Manage Payments: tabs with counts, View Proof approve/reject, Record Payment, history search, ZIP/one-proof downloads, record_payment/refresh_overdue migration; per-width seeds and Date-shift clock for e2e. 317 tests. Review PASS. M7 todo: record_payment refuses overpayment (review suggestion).
 - M7 Manage Concerns: inbox, chat conversation, reply and status with flowchart popups; concern_messages migration with RLS, owner_name(), record_payment balance check. 341 tests. Review PASS after removing an unused helper.
 - M8 Manage Announcements: table/cards with Published/Draft tabs, create/edit popup, delete confirm, published_at trigger migration. 360 tests. Review PASS.
+- M9 Admin Dashboard: count tiles, recent concerns, storage used with 80% warning, latest announcement. 373 tests. Review PASS.
