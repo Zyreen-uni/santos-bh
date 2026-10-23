@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M3
-Last green test count: 157 (43 unit, 57 db, 57 e2e)
+Current module: M4
+Last green test count: 204 (52 unit, 71 db, 81 e2e)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -62,6 +62,24 @@ Open problems: none
 - Validation (one check, loops back): Room # 1-10 letters/numbers, Building chosen, Capacity whole number 1 to 8 and
   not below the occupants, Room # not already used.
 
+## M3 plan (FR-004, FR-005, FR-006, FR-023)
+- Flowchart page 4: Add, Search ("No Tenant Found"), Edit, Mark Inactive ("Mark this tenant inactive?"), Assign
+  Manager ("Make Tenant Manager?", "Tenant Manager Assigned"). Design Tenants-B (filter chips by room with counts and
+  Inactive, cards, Add Tenant popup, phone profile with Rental History).
+- New migration 20261023000000_room_rules.sql (schema change, so a migration plus db tests): room capacity and
+  inactive rooms enforced on room_assignments; rooms with tenants cannot be deactivated or shrunk (M2 review note);
+  marking a tenant inactive ends the current room assignment. Base migrations are untouched.
+- Self-registered tenants have no room: a "No Room" chip lists them so the owner can assign one with Edit.
+- Moving rooms in Edit ends the current assignment today and starts a new one today (rental history keeps both).
+- Edit also has Email (FR-004 records it; the Add form follows the design without it).
+- Create Login on a tenant without one calls POST /api/admin/accounts with the owner's access token.
+- Bug found in M3: Supabase Auth admin createUser writes app_metadata after the insert, so handle_new_user never
+  saw tenant_id and made a second, empty tenant record. Migration 20261023010000_link_owner_created_login.sql links
+  the owner's record when app_metadata.tenant_id arrives and drops the empty one (app_metadata is service-role only,
+  so it cannot be used to claim another record). In real Supabase raw_app_meta_data can be NULL (the stub had {}).
+- e2e tests share one seeded database across the three widths, so M3 tests add their own tenants in room 203 and mark
+  them inactive at the end, and the manager swap test hands the role back to Maria.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -71,3 +89,4 @@ Open problems: none
 - M0 Setup and the gate: Vite/React/TS/Tailwind v4 scaffold, local Supabase (ports 5532x), 52 db checks on real Supabase, api dev plugin, seed, 7 motion primitives, gate proven. 67 tests. Review PASS.
 - M1 Login, Register and the app shell: auth provider, role routing and guards, Login/Register with flowchart popups, sidebar/rail/phone sheet with animated pill. 118 tests. Review PASS. Follow-ups for M2: RequireRole signOut in render, Login popup title per case.
 - M2 Manage Rooms: rooms by building, add/edit/view/deactivate with flowchart popups, derived status, 5 db checks. 157 tests. Review PASS. M3 todo: database trigger for room capacity and deactivating rooms with tenants.
+- M3 Manage Tenants and Tenant Manager: tenants by room, search, add/edit/move, mark inactive, Create Login, Assign Manager; migrations for room rules and the owner-created login link (real bug fixed). 204 tests. Review PASS after 2 added db checks.

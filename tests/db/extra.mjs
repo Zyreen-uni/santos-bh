@@ -33,5 +33,130 @@ export function extraTests(db, { as, denied, eq, ids }) {
       await db.query(`update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_ben]);
       eq(await occ(), 1, 'inactive tenant leaves the count');
     },
+
+    // ---------------- M3 Manage Tenants and Tenant Manager (migration 20261023000000_room_rules.sql)
+    'M3 the 9th tenant in a room is refused': async () => {
+      await as(ids.owner, `update public.rooms set capacity = 3 where room_id = $1`, [ids.r101]);
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [ids.t_dina, ids.r101]);
+      const err = await denied(ids.owner, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [ids.t_fe, ids.r101]);
+      eq(/Room 101 is full/.test(err.message), true, `full message: ${err.message}`);
+      // A full room with 8 beds: fill 203 with 8 tenants, the 9th is refused.
+      for (let i = 0; i < 8; i++) {
+        const t = (await as(ids.owner, `insert into public.tenants (full_name, contact_number) values ($1, '0917') returning tenant_id`, [`T${i}`])).rows[0].tenant_id;
+        await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [t, ids.r203]);
+      }
+      await denied(ids.owner, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [ids.t_fe, ids.r203]);
+    },
+    'M3 moving into a full room is refused, moving within free space works': async () => {
+      await as(ids.owner, `update public.rooms set capacity = 1 where room_id = $1`, [ids.r201]);
+      const a = (await db.query(`select assignment_id from public.room_assignments where tenant_id = $1 and date_ended is null`, [ids.t_ben])).rows[0].assignment_id;
+      await denied(ids.owner, `update public.room_assignments set room_id = $1 where assignment_id = $2`, [ids.r201, a]);
+      eq((await as(ids.owner, `update public.room_assignments set room_id = $1 where assignment_id = $2`, [ids.r102, a])).rowCount, 1, 'move to 102');
+    },
+    'M3 an inactive room takes no tenants': async () => {
+      await as(ids.owner, `update public.rooms set status = 'inactive' where room_id = $1`, [ids.r203]);
+      const err = await denied(ids.owner, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [ids.t_dina, ids.r203]);
+      eq(/inactive/.test(err.message), true, 'inactive message');
+    },
+    'M3 a room with tenants cannot be deactivated or set below its tenants': async () => {
+      const e1 = await denied(ids.owner, `update public.rooms set status = 'inactive' where room_id = $1`, [ids.r101]);
+      eq(/Move them first/.test(e1.message), true, 'deactivate message');
+      await denied(ids.owner, `update public.rooms set capacity = 1 where room_id = $1`, [ids.r101]);
+      eq((await as(ids.owner, `update public.rooms set capacity = 2 where room_id = $1`, [ids.r101])).rowCount, 1, 'capacity equal to tenants');
+    },
+    'M3 marking a tenant inactive ends the room assignment and frees the bed': async () => {
+      await as(ids.owner, `update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_ben]);
+      const a = (await db.query(`select date_ended from public.room_assignments where tenant_id = $1`, [ids.t_ben])).rows[0];
+      eq(a.date_ended !== null, true, 'assignment ended');
+      eq((await db.query(`select public.room_occupants($1) as n`, [ids.r101])).rows[0].n, 1, 'room 101 has one tenant left');
+      eq((await db.query(`select status from public.profiles where id = $1`, [ids.ben])).rows[0].status, 'inactive', 'login ended');
+    },
+    'M3 owner adds a tenant with a room and sees the rental history': async () => {
+      const t = (await as(ids.owner, `insert into public.tenants (full_name, contact_number) values ('Paolo Ramos', '0956 678 9012') returning tenant_id`)).rows[0].tenant_id;
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id, date_started) values ($1, $2, '2026-01-06')`, [t, ids.r203]);
+      const cur = (await db.query(`select assignment_id from public.room_assignments where tenant_id = $1`, [t])).rows[0].assignment_id;
+      await as(ids.owner, `update public.room_assignments set date_ended = '2026-05-31' where assignment_id = $1`, [cur]);
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id, date_started) values ($1, $2, '2026-06-01')`, [t, ids.r102]);
+      const h = (await as(ids.owner, `select r.room_number, ra.date_ended from public.room_assignments ra join public.rooms r using (room_id)
+        where ra.tenant_id = $1 order by ra.date_started desc`, [t])).rows;
+      eq(h.map((x) => x.room_number).join(), '102,203', 'history'); eq(h[0].date_ended, null, 'current room');
+    },
+    'M3 a tenant cannot add tenants, assign rooms or read another tenant': async () => {
+      await denied(ids.ben, `insert into public.tenants (full_name, contact_number) values ('X', '1')`);
+      await denied(ids.ben, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [ids.t_ben, ids.r203]);
+      eq((await as(ids.ben, `select * from public.tenants where tenant_id = $1`, [ids.t_anna])).rowCount, 0, 'other tenant');
+      eq((await as(ids.ben, `select * from public.room_assignments where tenant_id = $1`, [ids.t_anna])).rowCount, 0, 'other history');
+      eq((await as(ids.ben, `select * from public.profiles where id = $1`, [ids.anna])).rowCount, 0, 'other profile');
+    },
+    'M3 add_tenant saves the tenant and the room together; a full room saves neither': async () => {
+      const id = (await as(ids.owner, `select public.add_tenant('Paolo Ramos', '0956 678 9012', $1, '2026-10-19', 'paolo@gmail.com') as id`, [ids.r203])).rows[0].id;
+      const t = (await db.query(`select t.full_name, t.email, ra.room_id, ra.date_started from public.tenants t
+        join public.room_assignments ra using (tenant_id) where t.tenant_id = $1`, [id])).rows[0];
+      eq(t.full_name, 'Paolo Ramos', 'name'); eq(t.email, 'paolo@gmail.com', 'email'); eq(t.room_id, ids.r203, 'room');
+      eq(t.date_started.toISOString().slice(0, 10), '2026-10-19', 'date started');
+      await as(ids.owner, `update public.rooms set capacity = 2 where room_id = $1`, [ids.r101]);
+      const before = (await db.query(`select count(*)::int as n from public.tenants`)).rows[0].n;
+      await denied(ids.owner, `select public.add_tenant('Full Room', '0917 000 0000', $1, '2026-10-19')`, [ids.r101]);
+      eq((await db.query(`select count(*)::int as n from public.tenants`)).rows[0].n, before, 'no half-saved tenant');
+      await denied(ids.ben, `select public.add_tenant('X', '0917 000 0000', $1, '2026-10-19')`, [ids.r203]);
+    },
+    'M3 move_tenant ends the old stay the day before and starts the new one': async () => {
+      await db.query(`update public.room_assignments set date_started = '2026-06-01' where tenant_id = $1`, [ids.t_ben]);
+      await as(ids.owner, `select public.move_tenant($1, $2, '2026-10-20')`, [ids.t_ben, ids.r203]);
+      const h = (await db.query(`select room_id, date_started, date_ended from public.room_assignments where tenant_id = $1 order by date_started`, [ids.t_ben])).rows;
+      eq(h.length, 2, 'two stays'); eq(h[0].date_ended.toISOString().slice(0, 10), '2026-10-19', 'old stay ends the day before');
+      eq(h[1].room_id, ids.r203, 'new room'); eq(h[1].date_ended, null, 'new stay is current');
+      await as(ids.owner, `select public.move_tenant($1, $2, '2026-10-21')`, [ids.t_ben, ids.r203]);
+      eq((await db.query(`select count(*)::int as n from public.room_assignments where tenant_id = $1`, [ids.t_ben])).rows[0].n, 2, 'same room: no change');
+      await as(ids.owner, `select public.move_tenant($1, $2)`, [ids.t_dina, ids.r102]);
+      eq((await db.query(`select room_id from public.room_assignments where tenant_id = $1 and date_ended is null`, [ids.t_dina])).rows[0].room_id, ids.r102, 'room for a tenant with none');
+      await denied(ids.ben, `select public.move_tenant($1, $2)`, [ids.t_ben, ids.r102]);
+    },
+    // Migration 20261023010000_link_owner_created_login.sql: Supabase Auth writes app_metadata after the insert.
+    'M3 owner-created login links when app_metadata.tenant_id arrives after the insert': async () => {
+      const u = (await db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'fe.cruz@santosbh.local') returning id`)).rows[0].id;
+      const stray = (await db.query(`select tenant_id from public.tenants where user_id = $1`, [u])).rows[0].tenant_id;
+      await db.query(`update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || $2::jsonb where id = $1`, [u, JSON.stringify({ tenant_id: ids.t_fe })]);
+      eq((await db.query(`select user_id from public.tenants where tenant_id = $1`, [ids.t_fe])).rows[0].user_id, u, 'owner record linked');
+      eq((await db.query(`select count(*)::int as n from public.tenants where tenant_id = $1`, [stray])).rows[0].n, 0, 'empty record removed');
+      eq((await db.query(`select count(*)::int as n from public.tenants where user_id = $1`, [u])).rows[0].n, 1, 'one record for the login');
+    },
+    'M3 a login with records cannot be moved onto another tenant, and a taken record is refused': async () => {
+      // ben's tenant record has a room, so it cannot be dropped for fe's record.
+      await denied('server', `update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || $2::jsonb where id = $1`, [ids.ben, JSON.stringify({ tenant_id: ids.t_fe })]);
+      const u = (await db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'new.one@santosbh.local') returning id`)).rows[0].id;
+      await denied('server', `update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || $2::jsonb where id = $1`, [u, JSON.stringify({ tenant_id: ids.t_anna })]);
+      eq((await db.query(`select user_id from public.tenants where tenant_id = $1`, [ids.t_anna])).rows[0].user_id, ids.anna, 'anna keeps her login');
+    },
+    'M3 marking the manager inactive ends manager access at the rule (is_manager, save_utility_bills, bill photos)': async () => {
+      eq((await as(ids.anna, `select public.is_manager() as m`)).rows[0].m, true, 'anna is manager before');
+      await as(ids.owner, `update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_anna]);
+      eq((await as(ids.anna, `select public.is_manager() as m`)).rows[0].m, false, 'is_manager after');
+      eq((await db.query(`select count(*)::int as n from public.tenant_manager`)).rows[0].n, 0, 'manager row removed');
+      await denied(ids.anna, `select public.save_utility_bills('2026-10-01', 900, '2026-10/rest.jpg', '[]')`);
+      await denied(ids.anna, `select public.generate_monthly_bills('2026-10-01')`);
+      await denied(ids.anna, `insert into storage.objects (bucket_id, name) values ('utility-bills', '2026-10/after.jpg')`);
+    },
+    'M3 a tenant cannot assign the manager: not the manager, not another tenant': async () => {
+      await db.query(`delete from public.tenant_manager`);
+      // non-manager tenant names themselves, and the former manager names someone else
+      await denied(ids.ben, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)`, [ids.t_ben]);
+      await denied(ids.anna, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)`, [ids.t_carl]);
+      await db.query(`insert into public.tenant_manager (tenant_id) values ($1)`, [ids.t_anna]);
+      // the current manager cannot hand the role on, and a non-manager cannot take it or remove it
+      eq((await as(ids.anna, `update public.tenant_manager set tenant_id = $1`, [ids.t_ben])).rowCount, 0, 'manager passes the role');
+      eq((await as(ids.ben, `update public.tenant_manager set tenant_id = $1`, [ids.t_ben])).rowCount, 0, 'tenant takes the role');
+      eq((await as(ids.ben, `delete from public.tenant_manager`)).rowCount, 0, 'tenant removes the role');
+      await denied(ids.ben, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
+        on conflict (setting_id) do update set tenant_id = excluded.tenant_id`, [ids.t_ben]);
+      eq((await db.query(`select tenant_id from public.tenant_manager`)).rows[0].tenant_id, ids.t_anna, 'manager unchanged');
+    },
+    'M3 manager swap: the old manager loses the role at once': async () => {
+      eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
+        on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');
+      eq((await as(ids.carl, `select public.is_manager() as m`)).rows[0].m, true, 'carl is manager');
+      eq((await as(ids.anna, `select public.is_manager() as m`)).rows[0].m, false, 'anna is not');
+      await denied(ids.anna, `select public.save_utility_bills('2026-10-01', 900, 'a', '[]')`);
+    },
   };
 }
