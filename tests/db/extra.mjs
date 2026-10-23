@@ -469,6 +469,23 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       // function lets through on purpose, so only the missing grant for anon can be shown.
       await denied(null, `select public.refresh_overdue('2026-10-27')`);
     },
+    // ---------------- M17 Final pass: security review
+    'M17 every table in public has row level security on, and every bucket is private': async () => {
+      const open = (await db.query(`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relrowsecurity order by 1`)).rows.map((r) => r.relname);
+      eq(open.join(), '', 'tables without RLS');
+      const buckets = (await db.query(`select id, public from storage.buckets order by id`)).rows;
+      eq(buckets.length > 0, true, 'buckets exist');
+      eq(buckets.filter((b) => b.public).map((b) => b.id).join(), '', 'public buckets');
+    },
+    'M17 anon reads nothing from any public table': async () => {
+      const tables = (await db.query(`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relkind = 'r' order by 1`)).rows.map((r) => r.relname);
+      for (const t of tables) {
+        const r = await as(null, `select count(*)::int as n from public.${t}`).catch(() => ({ rows: [{ n: 0 }] }));
+        eq(r.rows[0].n, 0, `anon rows in ${t}`);
+      }
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');

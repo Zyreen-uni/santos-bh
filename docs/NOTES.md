@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M17
-Last green test count: 499 (132 unit, 103 db, 264 e2e incl. 3 seed steps)
+Current module: none (all done). Waiting for the human: deployment, see docs/NEEDS_HUMAN.md
+Last green test count: 528 (135 unit, 105 db, 288 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -229,6 +229,18 @@ Open problems: none
 - tests/unit/crons.test.ts mocks @vercel/blob and the Supabase admin client. db check: the service role may run
   refresh_overdue (the tenant refusal is checked over the API in M6, since db tests connect as postgres).
 
+## M17 plan (final pass)
+- e2e/m17-user-stories.spec.ts: every owner, tenant and tenant manager story from requirements.md, walked through
+  the menus at each width (the module specs check each story in depth).
+- e2e/m17-accessibility.spec.ts: @axe-core/playwright (WCAG 2.1 A/AA) on Login, Register, every owner page, every
+  tenant page and an open dialog: no serious or critical issues. Keyboard: Enter opens, Tab never reaches the page
+  behind a dialog (native modal dialog; focus may step out to the browser toolbar and back), Escape closes and focus
+  returns; Escape on the logout confirm is Cancel.
+- Security: tests/unit/security.test.ts (no server secret in src/, VITE_ only URL and anon key, api/ and lib/ use no
+  VITE_ variable); db "M17" checks (RLS on every public table, every bucket private, anon reads no rows).
+- docs/REQUIREMENTS-MATRIX.md: each FR and NFR with its module and tests.
+- Then docs/NEEDS_HUMAN.md with the deployment steps, and stop.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -252,3 +264,4 @@ Open problems: none
 - M14 History Logs: table with filters (search, user, action, dates), Log Details with old and new values (popup below laptop), 50 rows per "Show more", tenant sees own records only; log_actors() migration; RegisterPage test pastes instead of typing. 478 tests. Review PASS.
 - M15 Logout: confirm popup (Out-A) from sidebar, rail, phone menu and dashboard tile; Login note "Logged Out Successfully" (text-effect, sessionStorage); "Could Not Log Out" on failure; test time limits 60 s e2e, 20 s unit. 491 tests. Review PASS after one FAIL.
 - M16 Crons: lib/cron.ts (timing-safe secret, closed when unset; 30 days plus every 1st), backup runs refresh_overdue first and saves 15 tables by Manila date; shrink keeps the path; mocked Blob/Supabase unit tests. 499 tests. Review PASS.
+- M17 Final pass: user-story walk and axe (WCAG 2.1 AA, no serious issues) on every page at three widths, keyboard dialogs, security checks (secrets, RLS, private buckets, anon), docs/REQUIREMENTS-MATRIX.md. 528 tests. Review PASS.
