@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M11
-Last green test count: 391 (98 unit, 92 db, 201 e2e incl. 3 seed steps)
+Current module: M12
+Last green test count: 416 (102 unit, 95 db, 219 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -161,6 +161,18 @@ Open problems: none
   Ana and records Tess, and M7 changes Ana's concern status instead of Maria's.
 - STATUS_TONE moved to src/lib/payments.ts (used by Payments and the tenant dashboard).
 
+## M11 plan (FR-018)
+- Flowchart page 11: Edit Profile (Full Name, Username, Email, Contact #, optional photo; "Invalid Input", "Changes
+  Saved"), My Room (Room #, rent per tenant, occupants, roommates, available slots; Back). Design Prof-C (profile and
+  room side by side, 8 bed spaces), Prof-C-Tablet (Edit Profile with Change Photo / Remove), Prof-C-Phone (room),
+  Prof-C-Phone-Photo (sheet: Take a Photo, Choose from Gallery, Remove Photo).
+- /tenant/profile and /tenant/room are one page; on a phone each shows its own part.
+- Migration 20261028000000_roommates.sql: my_roommates() (names and start dates of my own room only; RLS hides other
+  tenants) and change_username() (service role only).
+- The username is the login ("<username>@santosbh.local"), so a change goes through POST /api/account/username
+  (checks the caller's token, updates the profile, then the login email with the service role; undoes the profile
+  change if the email update fails). Photos: shrinkPhoto 512 px WebP into avatars/<user id>/; the old file is removed.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -178,3 +190,4 @@ Open problems: none
 - M8 Manage Announcements: table/cards with Published/Draft tabs, create/edit popup, delete confirm, published_at trigger migration. 360 tests. Review PASS.
 - M9 Admin Dashboard: count tiles, recent concerns, storage used with 80% warning, latest announcement. 373 tests. Review PASS.
 - M10 Tenant Dashboard: bill card with breakdown and status chip, my room, announcements, concern, phone tiles; M6/M7 tests retargeted so the sample stays for M10; duplicate-id fix. 391 tests. Review PASS.
+- M11 My Profile and My Room: profile and room with 8 bed spaces and roommates, Edit Profile, photo change/remove (512 px, own folder), username change via api/account/username; my_roommates()/change_username() migration. 416 tests. Review PASS.

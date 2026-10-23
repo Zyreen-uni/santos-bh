@@ -356,6 +356,30 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       const log = (await db.query(`select action, old_data from public.activity_logs where table_name = 'announcements' and record_id = $1 order by log_id`, [String(d)])).rows;
       eq(log.map((l) => l.action).join(), 'insert,delete', 'logged'); eq(log[1].old_data.title, 'Secret draft', 'deleted title kept in the log');
     },
+    // ---------------- M11 My Profile and My Room (migration 20261028000000_roommates.sql)
+    'M11 my_roommates lists only the other active tenants of my own room': async () => {
+      const r = (await as(ids.anna, `select full_name from public.my_roommates()`)).rows.map((x) => x.full_name);
+      eq(r.join(), 'BEN', 'anna sees ben (room 101)');
+      eq((await as(ids.carl, `select * from public.my_roommates()`)).rowCount, 0, 'carl alone in 201');
+      eq((await as(ids.dina, `select * from public.my_roommates()`)).rowCount, 0, 'no room, no roommates');
+      await db.query(`update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_ben]);
+      eq((await as(ids.anna, `select * from public.my_roommates()`)).rowCount, 0, 'inactive roommate left');
+      await denied(null, `select * from public.my_roommates()`);
+    },
+    'M11 a tenant edits their own name, email and contact; the change is logged; not another tenant': async () => {
+      eq((await as(ids.ben, `update public.tenants set full_name = 'Ben Dela Cruz', email = 'ben@gmail.com', contact_number = '0917 000 1234' where tenant_id = $1`, [ids.t_ben])).rowCount, 1, 'own row');
+      const log = (await db.query(`select actor_name, old_data, new_data, tenant_id from public.activity_logs where table_name = 'tenants' and record_id = $1 and action = 'update' order by log_id desc limit 1`, [String(ids.t_ben)])).rows[0];
+      eq(log.actor_name, 'benny', 'by ben'); eq(log.old_data.full_name, 'BEN', 'old name'); eq(log.new_data.full_name, 'Ben Dela Cruz', 'new name'); eq(log.tenant_id, ids.t_ben, 'about ben');
+      eq((await as(ids.ben, `update public.tenants set full_name = 'X' where tenant_id = $1`, [ids.t_anna])).rowCount, 0, 'not anna');
+      await denied(ids.ben, `update public.tenants set photo_path = $1 where tenant_id = $2`, [`${ids.anna}/me.webp`, ids.t_ben]);
+    },
+    'M11 change_username is for the server only and refuses a taken or bad username': async () => {
+      await denied(ids.ben, `select public.change_username($1, 'benjamin')`, [ids.ben]);
+      await denied('server', `select public.change_username($1, 'anna')`, [ids.ben]);
+      await denied('server', `select public.change_username($1, 'B!')`, [ids.ben]);
+      await as('server', `select public.change_username($1, 'benjamin')`, [ids.ben]);
+      eq((await db.query(`select username from public.profiles where id = $1`, [ids.ben])).rows[0].username, 'benjamin', 'renamed');
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');
