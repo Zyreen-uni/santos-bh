@@ -14,6 +14,7 @@ import SettingsPage from '@/pages/admin/SettingsPage';
 import UtilityBillingPage from '@/pages/UtilityBillingPage';
 import PaymentsPage from '@/pages/admin/PaymentsPage';
 import ConcernsPage from '@/pages/admin/ConcernsPage';
+import AnnouncementsPage from '@/pages/admin/AnnouncementsPage';
 
 // Pages with their own component. Menu items not listed here use MenuPage until their module.
 const ADMIN_PAGES: Record<string, ReactNode> = {
@@ -23,6 +24,7 @@ const ADMIN_PAGES: Record<string, ReactNode> = {
   '/admin/utility-billing': <UtilityBillingPage />,
   '/admin/payments': <PaymentsPage />,
   '/admin/concerns': <ConcernsPage />,
+  '/admin/announcements': <AnnouncementsPage />,
 };
 const TENANT_PAGES: Record<string, ReactNode> = {
   '/tenant/utility-billing': <UtilityBillingPage />,

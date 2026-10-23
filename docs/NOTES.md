@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M8
-Last green test count: 341 (84 unit, 89 db, 168 e2e incl. 3 seed steps)
+Current module: M9
+Last green test count: 360 (88 unit, 92 db, 180 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -133,6 +133,14 @@ Open problems: none
 - Same migration: record_payment refuses an amount above the bill balance (M6 review suggestion).
 - Seed: C-0011 has the Con-B conversation (4 messages, the last one Oct 20, 6:31 AM).
 
+## M8 plan (FR-014)
+- Flowchart page 9: Create ("Please Fill All Fields" when the title or message is empty, else "Announcement Saved"),
+  Edit ("Changes Saved"), Delete ("Delete this announcement?" Yes/No, "Announcement Deleted"). Design Ann-A: table on
+  laptop, cards on tablet/phone, tabs All/Published/Draft, popup with a Draft/Published switch.
+- Migration 20261027000000_announcement_dates.sql: published_at follows the status (set on publish, kept on edits,
+  cleared on draft); title and message are trimmed and a blank message is refused. Tenants never see drafts (RLS).
+- The list is newest first: published posts by their posted date, drafts by when they were saved.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -147,3 +155,4 @@ Open problems: none
 - M5 Utility Billing: one form for owner and manager with live split and bill photos, read-only for other tenants, room_occupancy()/manager_name() migration. 272 tests. Review PASS after tablet/phone layout fixes.
 - M6 Manage Payments: tabs with counts, View Proof approve/reject, Record Payment, history search, ZIP/one-proof downloads, record_payment/refresh_overdue migration; per-width seeds and Date-shift clock for e2e. 317 tests. Review PASS. M7 todo: record_payment refuses overpayment (review suggestion).
 - M7 Manage Concerns: inbox, chat conversation, reply and status with flowchart popups; concern_messages migration with RLS, owner_name(), record_payment balance check. 341 tests. Review PASS after removing an unused helper.
+- M8 Manage Announcements: table/cards with Published/Draft tabs, create/edit popup, delete confirm, published_at trigger migration. 360 tests. Review PASS.

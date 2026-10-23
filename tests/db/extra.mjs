@@ -330,6 +330,32 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       await denied(ids.owner, `select * from public.record_payment($1, 1400.01, '2026-10-20', 'cash')`, [b.bill_id]);
       eq((await as(ids.owner, `select * from public.record_payment($1, 1400, '2026-10-20', 'cash')`, [b.bill_id])).rows[0].bill_status, 'paid', 'the exact balance is fine');
     },
+    // ---------------- M8 Manage Announcements (migration 20261027000000_announcement_dates.sql)
+    'M8 a draft has no posted date; publishing sets it and keeps it through edits; back to draft clears it': async () => {
+      const a = (await as(ids.owner, `insert into public.announcements (title, message) values (' Room inspection ', 'Keep beds tidy.') returning announcement_id, status, published_at, title`)).rows[0];
+      eq(a.status, 'draft', 'draft by default'); eq(a.published_at, null, 'no date'); eq(a.title, 'Room inspection', 'trimmed');
+      await as(ids.owner, `update public.announcements set status = 'published' where announcement_id = $1`, [a.announcement_id]);
+      const posted = (await db.query(`select published_at from public.announcements where announcement_id = $1`, [a.announcement_id])).rows[0].published_at;
+      eq(posted !== null, true, 'posted date set');
+      await as(ids.owner, `update public.announcements set message = 'Keep beds and lockers tidy.' where announcement_id = $1`, [a.announcement_id]);
+      eq(String((await db.query(`select published_at from public.announcements where announcement_id = $1`, [a.announcement_id])).rows[0].published_at), String(posted), 'kept on edit');
+      await as(ids.owner, `update public.announcements set status = 'draft' where announcement_id = $1`, [a.announcement_id]);
+      eq((await db.query(`select published_at from public.announcements where announcement_id = $1`, [a.announcement_id])).rows[0].published_at, null, 'cleared');
+    },
+    'M8 an empty title or message is refused': async () => {
+      await denied(ids.owner, `insert into public.announcements (title, message) values ('', 'Hi')`);
+      await denied(ids.owner, `insert into public.announcements (title, message) values ('Hi', '   ')`);
+    },
+    'M8 tenants never see drafts and cannot write; the owner edits and deletes': async () => {
+      const d = (await as(ids.owner, `insert into public.announcements (title, message) values ('Secret draft', 'Later') returning announcement_id`)).rows[0].announcement_id;
+      eq((await as(ids.ben, `select * from public.announcements where announcement_id = $1`, [d])).rowCount, 0, 'draft hidden');
+      eq((await as(ids.ben, `select * from public.announcements where status = 'draft'`)).rowCount, 0, 'no drafts at all');
+      eq((await as(ids.ben, `update public.announcements set title = 'x'`)).rowCount, 0, 'tenant edit');
+      eq((await as(ids.ben, `delete from public.announcements`)).rowCount, 0, 'tenant delete');
+      eq((await as(ids.owner, `delete from public.announcements where announcement_id = $1`, [d])).rowCount, 1, 'owner deletes');
+      const log = (await db.query(`select action, old_data from public.activity_logs where table_name = 'announcements' and record_id = $1 order by log_id`, [String(d)])).rows;
+      eq(log.map((l) => l.action).join(), 'insert,delete', 'logged'); eq(log[1].old_data.title, 'Secret draft', 'deleted title kept in the log');
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');
