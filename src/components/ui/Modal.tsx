@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { cn } from '@/lib/utils';
 
 // On a phone every popup is a sheet at the bottom of the screen (C-Phone.html, Rooms-B-Phone.html).
-const PHONE_SHEET = 'max-md:top-auto max-md:bottom-0 max-md:m-0 max-md:max-w-none max-md:-translate-y-0 max-md:rounded-b-none';
+export const PHONE_SHEET = 'max-md:top-auto max-md:bottom-0 max-md:m-0 max-md:max-w-none max-md:-translate-y-0 max-md:rounded-b-none';
 
 // Every popup in the app (docs/design.md: the dialog primitive). A native <dialog> opened with
 // showModal(), so focus stays inside and Escape closes it. On a phone it sits at the bottom like a sheet.

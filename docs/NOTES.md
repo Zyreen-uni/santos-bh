@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M4
-Last green test count: 204 (52 unit, 71 db, 81 e2e)
+Current module: M5
+Last green test count: 232 (60 unit, 73 db, 99 e2e)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -80,6 +80,16 @@ Open problems: none
 - e2e tests share one seeded database across the three widths, so M3 tests add their own tenants in room 203 and mark
   them inactive at the end, and the manager swap test hands the role back to Maria.
 
+## M4 plan (FR-022)
+- Flowchart page 7: Save checks "Rent greater than 0 and due day 1 to 28?" (No: "Invalid Input", OK loops back);
+  "Rent price changed?" Yes: "Change Monthly Rent?" popup with old and new rent, No loops back to the form;
+  then "Settings Saved". Design Set-C: two setting rows (Monthly Rent, Payment Due Day) that open pickers:
+  rent field with the peso sign, due day grid 1 to 28 with the current day dashed.
+- The confirm text names the months from the latest billed month: "starting with the <next> bills. <latest> bills
+  stay at <old>." Bills keep the rent they were made with (generate_monthly_bills never changes rent_share).
+- Rent: a number above 0, at most 100,000, up to 2 decimals. Commas are allowed when typing ("1,600").
+- e2e tests change the rent and due day and put them back (1,500 and 25), because the widths share one database.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -90,3 +100,4 @@ Open problems: none
 - M1 Login, Register and the app shell: auth provider, role routing and guards, Login/Register with flowchart popups, sidebar/rail/phone sheet with animated pill. 118 tests. Review PASS. Follow-ups for M2: RequireRole signOut in render, Login popup title per case.
 - M2 Manage Rooms: rooms by building, add/edit/view/deactivate with flowchart popups, derived status, 5 db checks. 157 tests. Review PASS. M3 todo: database trigger for room capacity and deactivating rooms with tenants.
 - M3 Manage Tenants and Tenant Manager: tenants by room, search, add/edit/move, mark inactive, Create Login, Assign Manager; migrations for room rules and the owner-created login link (real bug fixed). 204 tests. Review PASS after 2 added db checks.
+- M4 Settings: rent and due day pickers, Change Monthly Rent? confirm with months from the latest bills, cn() radius tokens fix. 232 tests. Review PASS.

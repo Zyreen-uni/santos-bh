@@ -1,6 +1,6 @@
 // Database checks added by later modules (new migrations or module checks). They run after the
 // 52 reference checks, with the same seed, inside the same rolled-back transaction.
-export function extraTests(db, { as, denied, eq, ids }) {
+export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS }) {
   return {
     // ---------------- M2 Manage Rooms
     'M2 owner adds, edits and deactivates a room': async () => {
@@ -150,6 +150,28 @@ export function extraTests(db, { as, denied, eq, ids }) {
       await denied(ids.ben, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id`, [ids.t_ben]);
       eq((await db.query(`select tenant_id from public.tenant_manager`)).rows[0].tenant_id, ids.t_anna, 'manager unchanged');
+    },
+    // ---------------- M4 Settings
+    'M4 due day outside 1 to 28 and rent of 0 or less are refused; the owner saves good values': async () => {
+      for (const d of [0, 29, 31]) await denied(ids.owner, `update public.billing_settings set due_day = $1`, [d]);
+      for (const r of [0, -1]) await denied(ids.owner, `update public.billing_settings set monthly_rent = $1`, [r]);
+      eq((await as(ids.owner, `update public.billing_settings set monthly_rent = 1600, due_day = 28 where setting_id = 1`)).rowCount, 1, 'owner saves');
+      const s = (await db.query(`select monthly_rent, due_day from public.billing_settings`)).rows[0];
+      eq(s.monthly_rent, '1600.00', 'rent'); eq(s.due_day, 28, 'due day');
+      eq((await as(ids.anna, `update public.billing_settings set monthly_rent = 1`)).rowCount, 0, 'the manager cannot change settings');
+    },
+    'M4 a rent change keeps the rent of bills already made; the next month uses the new rent': async () => {
+      await saveBills(ids.anna, ROOMS());
+      await as(ids.owner, `update public.billing_settings set monthly_rent = 1600`);
+      // the manager corrects October after the change: the October rent stays
+      await saveBills(ids.anna, ROOMS());
+      const oct = (await db.query(`select distinct rent_share from public.monthly_bills where billing_month = '2026-10-01'`)).rows;
+      eq(oct.map((r) => r.rent_share).join(), '1500.00', 'October keeps 1500');
+      await as(ids.anna, `select public.save_utility_bills('2026-11-01', 900, '2026-11/rest.jpg', $1::jsonb)`, [JSON.stringify(ROOMS())]);
+      const nov = (await db.query(`select distinct rent_share, total_amount from public.monthly_bills where billing_month = '2026-11-01' and tenant_id = $1`, [ids.t_ben])).rows[0];
+      eq(nov.rent_share, '1600.00', 'November uses 1600'); eq(nov.total_amount, '2500.00', 'November total 1600 + 600 + 300');
+      const log = (await db.query(`select old_data, new_data, actor_name from public.activity_logs where table_name = 'billing_settings' order by log_id desc limit 1`)).rows[0];
+      eq(log.old_data.monthly_rent, 1500, 'old rent logged'); eq(log.new_data.monthly_rent, 1600, 'new rent logged'); eq(log.actor_name, 'owner', 'by owner');
     },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)

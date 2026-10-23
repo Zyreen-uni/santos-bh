@@ -34,3 +34,10 @@ describe('accounts', () => {
     expect(USERNAME.test('a'.repeat(31))).toBe(false);
   });
 });
+
+describe('cn with the theme radius tokens', () => {
+  it('lets a theme radius replace a radius from a primitive', () => {
+    expect(cn('rounded-lg p-0', 'rounded-card-lg')).toBe('p-0 rounded-card-lg');
+    expect(cn('rounded-lg', 'rounded-r-card-lg', 'rounded-field')).toBe('rounded-field');
+  });
+});

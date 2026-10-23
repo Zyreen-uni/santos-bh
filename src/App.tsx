@@ -10,11 +10,13 @@ import AdminDashboard from '@/pages/admin/AdminDashboard';
 import TenantDashboard from '@/pages/tenant/TenantDashboard';
 import RoomsPage from '@/pages/admin/RoomsPage';
 import TenantsPage from '@/pages/admin/TenantsPage';
+import SettingsPage from '@/pages/admin/SettingsPage';
 
 // Pages with their own component. Menu items not listed here use MenuPage until their module.
 const ADMIN_PAGES: Record<string, ReactNode> = {
   '/admin/rooms': <RoomsPage />,
   '/admin/tenants': <TenantsPage />,
+  '/admin/settings': <SettingsPage />,
 };
 const TENANT_PAGES: Record<string, ReactNode> = {};
 
