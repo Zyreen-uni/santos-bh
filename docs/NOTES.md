@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M12
-Last green test count: 416 (102 unit, 95 db, 219 e2e incl. 3 seed steps)
+Current module: M13
+Last green test count: 445 (110 unit, 98 db, 237 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -173,6 +173,18 @@ Open problems: none
   (checks the caller's token, updates the profile, then the login email with the service role; undoes the profile
   change if the email update fails). Photos: shrinkPhoto 512 px WebP into avatars/<user id>/; the old file is removed.
 
+## M12 plan (FR-008, FR-010)
+- Flowchart page 12, design MyPay-A: bill card (rent, electric, water, balance, Submit GCash Proof, status chip),
+  history (Month, Total, Details, Status, View Receipt), Submit GCash Proof popup (Send to GCash: name and number,
+  screenshot shrunk before upload, Amount Sent, Reference #, Send for Approval) and "Payment Proof Sent";
+  MyPay-A-Tablet's "October Utility Bills" (photos, "Entered by Maria Reyes, Oct 15", My share). On laptop the
+  utility bills open from "View Utility Bills".
+- Migration 20261029000000_gcash.sql: billing_settings.gcash_name / gcash_number (the owner sets them in Settings,
+  new row "GCash Account"; the seed uses sample-data.md: Brian Santos, 0917 555 0123), and utility_entered(month).
+- ReceiptDialog moved to src/components/Receipt.tsx (owner Payments and tenant My Payments).
+- e2e spec files are zero-padded (m00 to m12...): Playwright runs files in name order, and "m12" used to run before
+  "m2", so a later module's changes reached earlier modules' checks in the same width.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -191,3 +203,4 @@ Open problems: none
 - M9 Admin Dashboard: count tiles, recent concerns, storage used with 80% warning, latest announcement. 373 tests. Review PASS.
 - M10 Tenant Dashboard: bill card with breakdown and status chip, my room, announcements, concern, phone tiles; M6/M7 tests retargeted so the sample stays for M10; duplicate-id fix. 391 tests. Review PASS.
 - M11 My Profile and My Room: profile and room with 8 bed spaces and roommates, Edit Profile, photo change/remove (512 px, own folder), username change via api/account/username; my_roommates()/change_username() migration. 416 tests. Review PASS.
+- M12 My Payments: bill card, Submit GCash Proof (shrunk WebP, own folder, 1 MB bucket limit), receipts history, October utility bills with shares, owner GCash account in Settings; utility_entered()/gcash migration. 445 tests. Review PASS.

@@ -380,6 +380,29 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
       await as('server', `select public.change_username($1, 'benjamin')`, [ids.ben]);
       eq((await db.query(`select username from public.profiles where id = $1`, [ids.ben])).rows[0].username, 'benjamin', 'renamed');
     },
+    // ---------------- M12 My Payments (migration 20261029000000_gcash.sql)
+    'M12 the owner sets the GCash account, tenants read it but cannot change it': async () => {
+      eq((await as(ids.owner, `update public.billing_settings set gcash_name = 'Brian Santos', gcash_number = '0917 555 0123'`)).rowCount, 1, 'owner sets');
+      eq((await as(ids.ben, `select gcash_name, gcash_number from public.billing_settings`)).rows[0].gcash_number, '0917 555 0123', 'tenant reads');
+      eq((await as(ids.ben, `update public.billing_settings set gcash_number = '0999 999 9999'`)).rowCount, 0, 'tenant cannot change');
+      await denied(ids.owner, `update public.billing_settings set gcash_number = 'call me'`);
+    },
+    'M12 utility_entered names who entered the month and when, for any signed-in user only': async () => {
+      await saveBills(ids.anna, ROOMS());
+      const r = (await as(ids.carl, `select * from public.utility_entered('2026-10-01')`)).rows;
+      eq(r.length, 1, 'one row'); eq(r[0].entered_by, 'ANNA', 'the manager'); eq(r[0].entered_at !== null, true, 'when');
+      eq((await as(ids.carl, `select * from public.utility_entered('2026-09-01')`)).rowCount, 0, 'no bills that month');
+      await denied(null, `select * from public.utility_entered('2026-10-01')`);
+    },
+    'M12 a tenant submits a GCash proof for their own bill only, and it starts as pending': async () => {
+      const b = await ganna();
+      const p = (await as(ids.ben, `insert into public.payments (bill_id, amount, method, reference_no, proof_path) values ($1, 2400, 'gcash', '1023 456', $2) returning status, submitted_by`, [b.bill_id, `${ids.ben}/oct.webp`])).rows[0];
+      eq(p.status, 'pending', 'pending'); eq(p.submitted_by, ids.ben, 'submitted by ben');
+      eq((await bill('ben')).status, 'pending', 'bill pending');
+      const anna = await bill('anna');
+      await denied(ids.ben, `insert into public.payments (bill_id, amount, method, reference_no, proof_path) values ($1, 100, 'gcash', '1', $2)`, [anna.bill_id, `${ids.ben}/x.webp`]);
+      eq((await as(ids.carl, `select * from public.payments`)).rowCount, 0, 'carl sees no other payments');
+    },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)
         on conflict (setting_id) do update set tenant_id = excluded.tenant_id, assigned_at = now()`, [ids.t_carl])).rowCount, 1, 'upsert');

@@ -14,7 +14,7 @@ Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>
 - [x] M9 Admin Dashboard
 - [x] M10 Tenant Dashboard
 - [x] M11 My Profile and My Room
-- [ ] M12 My Payments
+- [x] M12 My Payments
 - [ ] M13 My Concerns and Announcements
 - [ ] M14 History Logs
 - [ ] M15 Logout

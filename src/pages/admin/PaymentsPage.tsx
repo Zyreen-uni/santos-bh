@@ -14,6 +14,7 @@ import {
   STATUS_TONE, statusCounts, todayPH, type Bill, type BillStatus, type Payment, type RecordForm,
 } from '@/lib/payments';
 import { uploadProof } from '@/lib/photos';
+import { ReceiptDialog } from '@/components/Receipt';
 import { downloadMonthProofs, downloadProof, fetchProofFiles, zipName } from '@/lib/proofDownloads';
 import { supabase } from '@/lib/supabase';
 import { cn, peso } from '@/lib/utils';
@@ -220,36 +221,6 @@ function RecordDialog({ bills, initial, onClose, onDone }: { bills: Bill[]; init
   );
 }
 
-export function ReceiptDialog({ bill, payment, onClose }: { bill: Bill; payment: Payment; onClose: () => void }) {
-  const rows: [string, string][] = [
-    ['Receipt #', payment.receipt_number ?? ''],
-    ['Issued', payment.issued_at ? dateTimePH(payment.issued_at) : ''],
-    ['Tenant', `${bill.tenant_name}, Room ${bill.room_number}`],
-    ['Bill', monthYear(bill.billing_month)],
-    ['Rent', peso(bill.rent_share)],
-    ['Electric share', peso(bill.electric_share)],
-    ['Water share', peso(bill.water_share)],
-    ['Total', peso(bill.total_amount)],
-    ['Amount Paid', peso(payment.amount)],
-    ['Method', payment.method === 'cash' ? 'Cash' : `GCash, ref ${payment.reference_no ?? ''}`],
-    ['Payment Date', dayMonth(payment.payment_date) + ', ' + payment.payment_date.slice(0, 4)],
-  ];
-  return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Receipt" description="Santos Boarding House, Brian Santos">
-      <dl className="m-0 mt-4 flex flex-col rounded-[22px] bg-soft px-[18px] py-1.5 text-[15px]">
-        {rows.map(([k, v], i) => (
-          <div key={k} className={cn('flex justify-between gap-3 py-2.5', i > 0 && 'border-t border-line', k === 'Total' && 'font-bold')}>
-            <dt className="text-muted">{k}</dt>
-            <dd className="m-0 text-right font-semibold">{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <button type="button" className={cn(btn.navy, 'mt-4 w-full')} onClick={onClose}>
-        OK
-      </button>
-    </Modal>
-  );
-}
 
 // Tenant Payment History (flowchart page 5, Search: "Display Tenant Payment History").
 function HistoryDialog({ bills, tenantId, onClose, onOpen }: { bills: Bill[]; tenantId: number; onClose: () => void; onOpen: (d: Dialog) => void }) {

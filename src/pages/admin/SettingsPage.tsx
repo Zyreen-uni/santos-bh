@@ -1,11 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronRight, Smartphone } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { btn } from '@/components/ui/buttons';
 import { MessageDialog, Modal, PHONE_SHEET } from '@/components/ui/Modal';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/motion-primitives/dialog';
-import { checkSettings, fetchSettings, ordinal, parseRent, rentChangeText, type SettingsData } from '@/lib/settings';
+import { checkGcash, checkSettings, fetchSettings, ordinal, parseRent, rentChangeText, type SettingsData } from '@/lib/settings';
+import { TextField } from '@/components/ui/Field';
 import { supabase } from '@/lib/supabase';
 import { cn, peso } from '@/lib/utils';
 
@@ -64,7 +65,7 @@ function RentConfirm({ data, newRent, busy, onYes, onCancel }: { data: SettingsD
 function useSaveSettings(onDone: (m: Message) => void) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (values: { monthly_rent?: number; due_day?: number }) => {
+    mutationFn: async (values: { monthly_rent?: number; due_day?: number; gcash_name?: string; gcash_number?: string }) => {
       const { error } = await supabase.from('billing_settings').update(values).eq('setting_id', 1);
       if (error) throw error;
     },
@@ -178,10 +179,41 @@ function DueDayDialog({ data, onClose, onDone }: { data: SettingsData; onClose: 
   );
 }
 
+// The GCash account shown to tenants in Submit GCash Proof ("Send to GCash: Brian Santos, 0917 555 0123").
+function GcashDialog({ data, onClose, onDone }: { data: SettingsData; onClose: () => void; onDone: (m: Message) => void }) {
+  const [name, setName] = useState(data.gcashName ?? '');
+  const [number, setNumber] = useState(data.gcashNumber ?? '');
+  const [error, setError] = useState('');
+  const save = useSaveSettings(onDone);
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const problem = checkGcash(name, number);
+    if (problem) setError(problem);
+    else save.mutate({ gcash_name: name.trim(), gcash_number: number.trim() });
+  }
+  return (
+    <Modal open onOpenChange={(o) => !o && onClose()} title="GCash Account" description="Tenants send their payments here and upload the GCash proof.">
+      <form onSubmit={onSubmit} noValidate className="mt-4 flex flex-col gap-4">
+        <TextField label="GCash Name" autoComplete="off" value={name} onChange={(e) => setName(e.target.value)} />
+        <TextField label="GCash Number" type="tel" autoComplete="off" value={number} onChange={(e) => setNumber(e.target.value)} />
+        <div className="grid grid-cols-2 gap-2.5">
+          <button type="button" className={btn.soft} onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className={btn.primary} disabled={save.isPending}>
+            Save
+          </button>
+        </div>
+      </form>
+      <MessageDialog open={!!error} onClose={() => setError('')} tone="bad" title="Invalid Input" message={error} />
+    </Modal>
+  );
+}
+
 // Settings (FR-022). Flowchart page 7, design Set-C.
 export default function SettingsPage() {
   const settings = useQuery({ queryKey: ['settings'], queryFn: fetchSettings });
-  const [open, setOpen] = useState<'rent' | 'due' | null>(null);
+  const [open, setOpen] = useState<'rent' | 'due' | 'gcash' | null>(null);
   const [message, setMessage] = useState<Message>(null);
   const done = (m: Message) => {
     setOpen(null);
@@ -208,10 +240,18 @@ export default function SettingsPage() {
             value={`${ordinal(settings.data.dueDay)} of each month`}
             onClick={() => setOpen('due')}
           />
+          <SettingRow
+            icon={<Smartphone size={20} />}
+            iconClass="bg-ok-bg text-ok"
+            title="GCash Account"
+            value={settings.data.gcashName && settings.data.gcashNumber ? `${settings.data.gcashName}, ${settings.data.gcashNumber}` : 'Not set yet'}
+            onClick={() => setOpen('gcash')}
+          />
         </section>
       )}
       {open === 'rent' && settings.data && <RentDialog data={settings.data} onClose={() => setOpen(null)} onDone={done} />}
       {open === 'due' && settings.data && <DueDayDialog data={settings.data} onClose={() => setOpen(null)} onDone={done} />}
+      {open === 'gcash' && settings.data && <GcashDialog data={settings.data} onClose={() => setOpen(null)} onDone={done} />}
       <MessageDialog open={!!message} onClose={() => setMessage(null)} tone={message?.tone ?? 'ok'} title={message?.title ?? ''} message={message?.text} />
     </>
   );

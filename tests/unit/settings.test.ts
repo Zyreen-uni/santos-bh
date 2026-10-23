@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkSettings, ordinal, parseRent, rentChangeText, type SettingsData } from '@/lib/settings';
+import { checkGcash, checkSettings, ordinal, parseRent, rentChangeText, type SettingsData } from '@/lib/settings';
 import { peso } from '@/lib/utils';
 
 describe('checkSettings (flowchart page 7: rent greater than 0 and due day 1 to 28)', () => {
@@ -31,7 +31,7 @@ describe('checkSettings (flowchart page 7: rent greater than 0 and due day 1 to 
 });
 
 describe('rent change wording', () => {
-  const data: SettingsData = { monthlyRent: 1500, dueDay: 25, activeTenants: 27, latestBilledMonth: '2026-10-01' };
+  const data: SettingsData = { monthlyRent: 1500, dueDay: 25, activeTenants: 27, latestBilledMonth: '2026-10-01', gcashName: 'Brian Santos', gcashNumber: '0917 555 0123' };
 
   it('says the new rent starts with the next bills and the billed month keeps its rent (Set-C.html)', () => {
     expect(rentChangeText(data, 1600, peso)).toBe(
@@ -48,5 +48,17 @@ describe('rent change wording', () => {
 
   it('writes the due day like the design', () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 25, 28].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '25th', '28th']);
+  });
+});
+
+describe('checkGcash (the account tenants pay to)', () => {
+  it('accepts a name and a mobile number', () => {
+    expect(checkGcash('Brian Santos', '0917 555 0123')).toBeNull();
+  });
+
+  it('asks for both and refuses a bad number', () => {
+    expect(checkGcash('', '0917 555 0123')).toMatch(/fill in/);
+    expect(checkGcash('Brian Santos', ' ')).toMatch(/fill in/);
+    expect(checkGcash('Brian Santos', 'call me')).toMatch(/GCash number/);
   });
 });

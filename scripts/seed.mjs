@@ -173,7 +173,7 @@ const roomIds = {};
 for (const [number, building] of ROOMS) {
   roomIds[number] = (await as(owner.uid, 'insert into public.rooms (building_id, room_number) values ($1, $2) returning room_id', [building, number])).rows[0].room_id;
 }
-await as(owner.uid, 'update public.billing_settings set monthly_rent = 1500, due_day = 25');
+await as(owner.uid, `update public.billing_settings set monthly_rent = 1500, due_day = 25, gcash_name = 'Brian Santos', gcash_number = '0917 555 0123'`);
 
 for (const [name, username, contact, , , , extra = {}] of TENANTS) {
   await createLogin(username, testEnv.TENANT_PASSWORD, { full_name: name, contact_number: contact, email: extra.email ?? null });

@@ -5,11 +5,13 @@ export interface SettingsData {
   dueDay: number;
   activeTenants: number;
   latestBilledMonth: string | null; // "2026-10-01", the newest month that has bills
+  gcashName: string | null; // where tenants send their GCash payments (MyPay-A.html)
+  gcashNumber: string | null;
 }
 
 export async function fetchSettings(): Promise<SettingsData> {
   const [settings, active, latest] = await Promise.all([
-    supabase.from('billing_settings').select('monthly_rent, due_day').single(),
+    supabase.from('billing_settings').select('monthly_rent, due_day, gcash_name, gcash_number').single(),
     supabase.from('room_assignments').select('tenant_id, tenants!inner(status)', { count: 'exact', head: true }).is('date_ended', null).eq('tenants.status', 'active'),
     supabase.from('monthly_bills').select('billing_month').order('billing_month', { ascending: false }).limit(1).maybeSingle(),
   ]);
@@ -19,6 +21,8 @@ export async function fetchSettings(): Promise<SettingsData> {
     dueDay: settings.data!.due_day,
     activeTenants: active.count ?? 0,
     latestBilledMonth: latest.data?.billing_month ?? null,
+    gcashName: settings.data!.gcash_name,
+    gcashNumber: settings.data!.gcash_number,
   };
 }
 
@@ -58,4 +62,12 @@ export function rentChangeText(data: SettingsData, newRent: number, peso: (n: nu
   const [y, m] = data.latestBilledMonth.split('-').map(Number);
   const next = `${m === 12 ? y + 1 : y}-${String((m % 12) + 1).padStart(2, '0')}-01`;
   return `${who} starting with the ${monthName(next)} bills. ${monthName(data.latestBilledMonth, false)} bills stay at ${peso(data.monthlyRent)}.`;
+}
+
+// The GCash account tenants pay to: a name and a mobile number.
+export function checkGcash(name: string, number: string): string | null {
+  if (!name.trim() || !number.trim()) return 'Please fill in the GCash name and number.';
+  if (name.trim().length > 100) return 'The name is too long.';
+  if (!/^[0-9 +()-]{7,20}$/.test(number.trim())) return 'Enter the GCash number, such as 0917 555 0123.';
+  return null;
 }
