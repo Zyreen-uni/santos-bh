@@ -1,7 +1,7 @@
 # Notes
 
 Current module: none (all done). Waiting for the human: deployment, see docs/NEEDS_HUMAN.md
-Last green test count: 528 (135 unit, 105 db, 288 e2e incl. 3 seed steps)
+Last green test count: 538 (142 unit, 105 db, 291 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -13,7 +13,9 @@ Open problems: none
 - Seeded usernames: owner, maria.reyes (manager, Room 102), luis.cruz, ana.lim, carla.diaz, rina.flores, jose.tan, ...
   (list in scripts/seed.mjs). e2e global setup reseeds before every run.
 - Another project's dev server ("Offline Notes") runs on localhost:5173. This app's dev server and the e2e tests use
-  port 5317 with strictPort and reuseExistingServer: false, so the tests never hit a foreign app.
+  port 5417 with strictPort and reuseExistingServer: false, so the tests never hit a foreign app. (Was 5317 until
+  2026-10-26: Windows then reserved ports 5236-5335 for Hyper-V/WSL and 5317 gave "listen EACCES". Check with
+  `netsh interface ipv4 show excludedportrange protocol=tcp` if the dev server cannot start.)
 - TypeScript is pinned to 6.0 (typescript-eslint does not support 7 yet). `baseUrl` is gone (deprecated in TS 6).
 
 ## M0 plan
@@ -265,3 +267,4 @@ Open problems: none
 - M15 Logout: confirm popup (Out-A) from sidebar, rail, phone menu and dashboard tile; Login note "Logged Out Successfully" (text-effect, sessionStorage); "Could Not Log Out" on failure; test time limits 60 s e2e, 20 s unit. 491 tests. Review PASS after one FAIL.
 - M16 Crons: lib/cron.ts (timing-safe secret, closed when unset; 30 days plus every 1st), backup runs refresh_overdue first and saves 15 tables by Manila date; shrink keeps the path; mocked Blob/Supabase unit tests. 499 tests. Review PASS.
 - M17 Final pass: user-story walk and axe (WCAG 2.1 AA, no serious issues) on every page at three widths, keyboard dialogs, security checks (secrets, RLS, private buckets, anon), docs/REQUIREMENTS-MATRIX.md. 528 tests. Review PASS.
+- After M17 (2026-10-26): Login and Register share one compact card (src/pages/AuthPage.tsx) that fits laptop, tablet and phone without scrolling; animated-background pill and transition-panel (new local mode="wait" so the two forms never coexist) with a measured height animation. Dev/test port 5317 -> 5417 (Windows reserved 5236-5335). 538 tests (142 unit, 105 db, 291 e2e).

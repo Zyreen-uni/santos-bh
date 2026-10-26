@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
+/* Low windows (a laptop at 125% zoom, a small phone): the Login and Register card tightens so it never scrolls. */
+@custom-variant short (@media (max-height: 760px));
 
 /* Style C Soft Rounded (docs/design.md). Components use these tokens, never raw hex. */
 @theme {

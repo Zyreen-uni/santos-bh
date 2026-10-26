@@ -14,7 +14,7 @@ export default defineConfig({
   timeout: 60_000,
   forbidOnly: true,
   reporter: [['list'], ['json', { outputFile: 'reports/e2e.json' }]],
-  use: { baseURL: 'http://localhost:5317', trace: 'retain-on-failure' },
+  use: { baseURL: 'http://localhost:5417', trace: 'retain-on-failure' },
   projects: [
     { name: 'seed-laptop', testMatch: SEED },
     { name: 'laptop', testIgnore: SEED, dependencies: ['seed-laptop'], use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
@@ -24,5 +24,5 @@ export default defineConfig({
     { name: 'phone', testIgnore: SEED, dependencies: ['seed-phone'], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, hasTouch: true } },
   ],
   // Own port and never reuse: another project on this machine runs its dev server on 5173.
-  webServer: { command: 'npx vite --port 5317 --strictPort', url: 'http://localhost:5317', reuseExistingServer: false, timeout: 120_000 },
+  webServer: { command: 'npx vite --port 5417 --strictPort', url: 'http://localhost:5417', reuseExistingServer: false, timeout: 120_000 },
 });

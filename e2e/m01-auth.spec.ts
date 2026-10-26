@@ -95,6 +95,37 @@ test('register a new tenant, then log in as that tenant', async ({ page }, info)
   await expect(page.getByRole('heading', { name: 'Hi, Nina' })).toBeVisible();
 });
 
+test('Login and Register fit the screen without scrolling, and the tab switch keeps the same card', async ({ page }, info) => {
+  const noScroll = async () => {
+    const extra = await page.evaluate(() => document.documentElement.scrollHeight - document.documentElement.clientHeight);
+    expect(extra).toBeLessThanOrEqual(0);
+    await expectNoHorizontalScroll(page);
+  };
+  await page.goto('/login');
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+  await noScroll();
+  // Mark the card, then switch tabs: the same card stays, only the form inside changes.
+  await page.getByRole('navigation', { name: 'Account' }).evaluate((nav) => nav.parentElement!.setAttribute('data-test-card', 'kept'));
+  await page.getByRole('link', { name: 'Register' }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByRole('heading', { name: 'Create your tenant account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toHaveCount(0);
+  await expect(page.locator('[data-test-card="kept"]')).toHaveCount(1);
+  await expect(page.getByRole('link', { name: 'Register' })).toHaveAttribute('aria-current', 'page');
+  await page.waitForTimeout(400); // the height and slide animations
+  await noScroll();
+  await screen(page, info, 'M1', 'register-compact');
+  // The smallest common phone height still fits.
+  if (info.project.name === 'phone') {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.waitForTimeout(400);
+    await noScroll();
+  }
+  await page.getByRole('link', { name: 'Login' }).click();
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+  await expect(page.locator('[data-test-card="kept"]')).toHaveCount(1);
+});
+
 test('a taken username is refused', async ({ page }) => {
   await page.goto('/register');
   await page.getByLabel('Full Name').fill('Another Maria');

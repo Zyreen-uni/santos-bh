@@ -3,8 +3,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
 import { ADMIN_MENU, TENANT_MENU } from '@/components/layout/menus';
 import { RequireRole } from '@/components/RequireRole';
-import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
+import AuthPage from '@/pages/AuthPage';
 import MenuPage from '@/pages/MenuPage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import TenantDashboard from '@/pages/tenant/TenantDashboard';
@@ -45,8 +44,12 @@ const TENANT_PAGES: Record<string, ReactNode> = {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* One card for both, so it stays on screen and animates when the tab changes. */}
+      <Route element={<AuthPage />}>
+        {/* AuthPage picks the form from the address; these only name the paths (an empty element keeps React Router quiet). */}
+        <Route path="/login" element={<></>} />
+        <Route path="/register" element={<></>} />
+      </Route>
       <Route
         path="/admin"
         element={

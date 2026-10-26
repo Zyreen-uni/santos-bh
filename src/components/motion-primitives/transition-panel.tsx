@@ -14,6 +14,8 @@ export type TransitionPanelProps = {
   transition?: Transition;
   activeIndex: number;
   variants?: { enter: Variant; center: Variant; exit: Variant };
+  // Local change: 'wait' lets the old panel leave before the new one comes in (two forms never exist at once).
+  mode?: 'popLayout' | 'wait' | 'sync';
 } & MotionProps;
 
 export function TransitionPanel({
@@ -22,13 +24,14 @@ export function TransitionPanel({
   transition,
   variants,
   activeIndex,
+  mode = 'popLayout',
   ...motionProps
 }: TransitionPanelProps) {
   return (
     <div className={cn('relative', className)}>
       <AnimatePresence
         initial={false}
-        mode='popLayout'
+        mode={mode}
         custom={motionProps.custom}
       >
         <motion.div

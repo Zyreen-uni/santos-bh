@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { AuthCard, SubmitButton } from '@/components/AuthCard';
+import { AuthForm, AuthHeading, SubmitButton } from '@/components/AuthCard';
 import { PasswordField, TextField } from '@/components/ui/Field';
 import { MessageDialog } from '@/components/ui/Modal';
 import { supabase, loginEmail } from '@/lib/supabase';
@@ -9,6 +9,8 @@ import { checkRegister, type RegisterInput } from '@/lib/validation';
 const EMPTY: RegisterInput = { fullName: '', username: '', contactNumber: '', email: '', password: '', confirmPassword: '' };
 
 // Flowchart page 1, right side. Design: C-Register.html (laptop and tablet), C-Phone.html (phone).
+// Shown inside the shared Login / Register card (AuthPage). Three rows of two fields on a laptop and a tablet, so the
+// card fits the screen without scrolling; on a phone the name and the email take a full row.
 // Every new account is a tenant: the database trigger sets the role, whatever the form sends.
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -46,18 +48,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthCard active="register" onSubmit={onSubmit} wide>
-      <div className="flex flex-col gap-1">
-        <h1 className="m-0 text-[26px] font-extrabold text-navy max-md:text-2xl">Create your tenant account</h1>
-        <p className="m-0 text-[15px] text-muted">The owner assigns your room after you register.</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
-        <TextField label="Full Name" className="col-span-2 max-md:col-span-1" autoComplete="name" value={form.fullName} onChange={set('fullName')} />
-        <TextField label="Username" autoComplete="username" autoCapitalize="none" value={form.username} onChange={set('username')} />
-        <TextField label="Contact #" type="tel" autoComplete="tel" value={form.contactNumber} onChange={set('contactNumber')} />
-        <TextField label="Email" className="col-span-2 max-md:col-span-1" type="email" autoComplete="email" value={form.email} onChange={set('email')} />
-        <PasswordField label="Password" autoComplete="new-password" value={form.password} onChange={set('password')} />
-        <PasswordField label="Confirm Password" autoComplete="new-password" value={form.confirmPassword} onChange={set('confirmPassword')} />
+    <AuthForm onSubmit={onSubmit}>
+      <AuthHeading title="Create your tenant account" subtitle="The owner assigns your room after you register." />
+      <div className="grid grid-cols-2 gap-x-3 gap-y-3 short:gap-y-2">
+        <TextField compact label="Full Name" className="max-md:col-span-2" autoComplete="name" value={form.fullName} onChange={set('fullName')} />
+        <TextField compact label="Username" autoComplete="username" autoCapitalize="none" value={form.username} onChange={set('username')} />
+        <TextField compact label="Contact #" type="tel" autoComplete="tel" value={form.contactNumber} onChange={set('contactNumber')} />
+        <TextField compact label="Email" className="max-md:col-span-2" type="email" autoComplete="email" value={form.email} onChange={set('email')} />
+        <PasswordField compact label="Password" autoComplete="new-password" value={form.password} onChange={set('password')} />
+        <PasswordField compact label="Confirm Password" autoComplete="new-password" value={form.confirmPassword} onChange={set('confirmPassword')} />
       </div>
       <SubmitButton busy={busy}>Register</SubmitButton>
       <MessageDialog open={!!error} onClose={() => setError('')} tone="bad" title="Invalid Input" message={error} />
@@ -68,6 +67,6 @@ export default function RegisterPage() {
         title="Registration Successful"
         message="You can now log in with your username and password."
       />
-    </AuthCard>
+    </AuthForm>
   );
 }
