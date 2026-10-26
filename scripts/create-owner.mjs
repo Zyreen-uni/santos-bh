@@ -21,7 +21,7 @@ export async function createOwner(client, { username, fullName, password }) {
   const { data, error } = await client.auth.admin.createUser({
     email: loginEmail(username), password, email_confirm: true, user_metadata: { full_name: fullName || '' },
   });
-  if (error) throw new Error(error.status === 422 ? `The username "${username}" is taken.` : error.message);
+  if (error) throw new Error(error.status === 422 ? `The username "${username}" is taken.` : error.message, { cause: error.cause });
   const id = data.user.id;
   try {
     const role = await client.from('profiles').update({ role: 'admin', status: 'active' }).eq('id', id).select('id');
@@ -101,5 +101,6 @@ async function main() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((e) => { console.error(e.message); process.exit(1); });
+  // "fetch failed" alone says nothing; the cause names the network or key problem.
+  main().catch((e) => { console.error(e.message, e.cause ? `(${e.cause.code || ''} ${e.cause.message || e.cause})` : ''); process.exit(1); });
 }
