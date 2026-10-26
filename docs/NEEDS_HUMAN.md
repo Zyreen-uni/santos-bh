@@ -43,11 +43,21 @@ dashboards yourself. Nothing has been pushed or deployed.
    day at 02:00 Philippine time; photo shrinking on the 2nd of each month).
 
 ## 4. Make the owner account
-1. Open the deployed site, click Register, and sign up with the username `owner`, the full name `Brian Santos` and a
-   strong password.
-2. In Supabase SQL Editor, run scripts/set-admin.sql (change `owner` in it if you chose another username).
-3. Log out and log in again: the Admin Dashboard opens. In Settings, set the Monthly Rent, the Payment Due Day and
-   the GCash Account. Then add the rooms and tenants.
+Do not use the Register page for this: Register only ever makes tenant accounts. Make the owner login from this
+folder instead, with the service role key typed into your own shell (it is not saved anywhere).
+1. In PowerShell, in this folder:
+   ```
+   $env:SUPABASE_URL = "https://<your project ref>.supabase.co"
+   $env:SUPABASE_SERVICE_ROLE_KEY = "<Secret key from Project Settings > API Keys>"
+   npm run create-owner -- --username owner --name "Brian Santos"
+   ```
+   Type a strong password when asked (it is not shown). Give this username and password to the owner.
+2. For your own developer login, run it again with another username, for example
+   `npm run create-owner -- --username dev.admin --name "Developer"`. When you hand over the system, mark that login
+   inactive or delete it in Supabase > Authentication > Users.
+3. Close the shell (or run `Remove-Item Env:SUPABASE_SERVICE_ROLE_KEY`) so the key does not stay in it.
+4. Log in on the deployed site: the Admin Dashboard opens. In Settings, set the Monthly Rent, the Payment Due Day
+   and the GCash Account. Then add the rooms and tenants.
 
 ## 5. Check it works
 - Log in as the owner, open every menu item.
