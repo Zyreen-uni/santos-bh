@@ -1,5 +1,10 @@
 # Needs a human: deployment
 
+**Now (2026-10-26):** the owner login `owner` is made. Login says "Email logins are disabled". Fix:
+1. Supabase > Authentication > Sign In / Providers > Email: turn **Enable Email provider** ON, keep **Confirm email** OFF, Save.
+2. Run `git push` so Vercel deploys commit 75345d7 (pages like /login no longer give 404 on reload).
+Then log in as `owner` and do step 5 below. Tell me when it works and I will delete this file.
+
 All modules (M0 to M17) are built, tested (135 unit, 105 database and 288 e2e tests, all passing) and reviewed (every reports/reviews/M*.md says
 VERDICT: PASS). The app now needs your Supabase and Vercel accounts. I never see your keys: you type them into the
 dashboards yourself. Nothing has been pushed or deployed.
@@ -17,7 +22,7 @@ dashboards yourself. Nothing has been pushed or deployed.
      then `npx supabase db push`; or
    - SQL Editor: open each file in supabase/migrations and run them one by one, oldest first
      (20261019000000_santos_bh.sql first, 20261030000000_log_actors.sql last).
-3. Authentication > Sign In / Providers > Email: turn OFF "Confirm email". Logins use `<username>@santosbh.local`,
+3. Authentication > Sign In / Providers > Email: keep "Enable Email provider" ON and turn OFF "Confirm email". Logins use `<username>@santosbh.local`,
    which cannot receive mail.
 4. Storage: check that the three buckets (proofs, utility-bills, avatars) exist and are not public.
 5. Project Settings > API: keep this page open. You need the Project URL, the anon (public) key and the
