@@ -25,17 +25,19 @@ dashboards yourself. Nothing has been pushed or deployed.
 
 ## 3. Make the Vercel project
 1. Go to vercel.com, click Add New > Project, and import the GitHub repository. Framework: Vite (found by itself).
-2. Storage > Create > Blob. Connect it to this project. Vercel adds BLOB_READ_WRITE_TOKEN for you.
-3. Settings > Environment Variables. Add these for Production (and Preview if you use it):
+2. Storage > Create > Blob. Connect it to this project. Vercel adds BLOB_STORE_ID for you (new stores sign in with
+   Vercel's own OIDC token, not BLOB_READ_WRITE_TOKEN; @vercel/blob 2.8 supports both, so add nothing).
+3. Settings > Environment Variables. Add these for Production (and Preview if you use it). VITE_ values are built
+   into the web page, so Vercel only accepts them as Config:
 
-| Name | Value |
-| --- | --- |
-| VITE_SUPABASE_URL | Project URL from Supabase |
-| VITE_SUPABASE_ANON_KEY | anon (public) key |
-| SUPABASE_URL | Project URL (same as above) |
-| SUPABASE_SERVICE_ROLE_KEY | service_role key. Only here, never in a VITE_ variable. |
-| CRON_SECRET | Any long random text, for example from `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| BLOB_READ_WRITE_TOKEN | Added by step 2 |
+| Name | Type | Value |
+| --- | --- | --- |
+| VITE_SUPABASE_URL | Config | Project URL from Supabase |
+| VITE_SUPABASE_ANON_KEY | Config | anon (public) key |
+| SUPABASE_URL | Config | Project URL (same as above) |
+| SUPABASE_SERVICE_ROLE_KEY | Secret | Secret key (`sb_secret_...`) or legacy service_role key. Only here, never in a VITE_ variable, never in a chat. |
+| CRON_SECRET | Secret | Any long random text, for example from `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| BLOB_STORE_ID | (set by Vercel) | Added by step 2 |
 
 4. Deployments > Redeploy, so the build picks up the variables. vercel.json sets the two cron jobs (backup every
    day at 02:00 Philippine time; photo shrinking on the 2nd of each month).
