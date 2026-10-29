@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M21 (back-end tests and the QA report)
-Last green test count: 575 (159 unit, 113 db, 303 e2e incl. 3 seed steps)
+Current module: none (all done). Waiting for the human: see docs/NEEDS_HUMAN.md
+Last green test count: 1116 (192 unit, 621 db, 303 e2e incl. 3 seed steps)
 Open problems: none (the red verify of 2026-10-29 is fixed, see "M21 status")
 
 ## Local setup facts (read after a context reset)
@@ -330,20 +330,29 @@ Open problems: none (the red verify of 2026-10-29 is fixed, see "M21 status")
 - M18 Monthly bills without the utility entry: bill_snapshot migration (in_split snapshot, generate for the service role and direct sessions, centavo-exact split, joiner bills, bills_kept, month_split), cron makes the month's bills before overdue, kept-bills notice and snapshot counts on Utility Billing and tenant screens. 549 tests. Review PASS after one FAIL.
 - M19 Password reset and change: api/admin/password (owner resets, logged without the password), Change Password for tenants (Edit Profile) and the owner (Settings), MIN_PASSWORD in lib/accounts.ts, README with the owner's own recovery. 572 tests. Review PASS.
 - M20 Docs sync: FR-029 to FR-033 (checked against the code), matrix rows FR-027 to FR-033, requirementsMatrix check (found 2 rows with no file), docs/PAPER-CHANGES.md. 575 tests. Review PASS.
+- M21 Back-end tests and report: 50 unit (BE-UT) and 621 integration (BE-IT) back-end tests incl. a 380-cell RLS matrix with 76 controls and real-API tests; catalog (671) with its check; npm run report:backend writes reports/Backend-Test-Report.docx and checks it. 1116 tests. Review PASS.
 
-## M21 status (in progress, not reviewed)
-- Done: Part A unit tests BE-UT-001 to BE-UT-050 (tests/unit/backendAccounts, backendUsername, backendLib, crons,
-  adminPassword, security, api-dev-server; tests/unit/fakeSupabase.ts mocks createClient so the real admin() and
-  requireAdmin run). Part B IDs: tests/db/reference-ids.mjs (BE-IT-001 to 052 by exact title, suite.mjs unchanged),
-  extra.mjs titles BE-IT-053 to 113.
-- Next: run.mjs saves each test's id, status, duration and error in reports/db.json (keep passed/failed);
-  tests/db/backend.mjs (schema rules, every rpc, every trigger, billing math, receipt numbers, logs) from BE-IT-114;
-  tests/db/rls.mjs access matrix (16 tables + 3 buckets x select/insert/update/delete x owner, manager (anna),
-  tenant (ben, own rows), another tenant (carl on ben's rows), anon), expected cells drafted from pg_policies:
-  rooms never deleted, payments have no update policy, manager cannot update utility_bills, archived_photos refuses all;
-  tests/db/api.mjs real-API calls via Vite ssrLoadModule outside the transaction, temporary users cleaned up;
-  tests/catalog/backend.json + check; docx devDependency, scripts/backend-report.mjs, "report:backend" (runs the full
-  unit suite into reports/vitest.json so the gate's count never drops, then test:db, then builds the report).
+## M21 plan (back-end tests and the QA report)
+- Part A unit (Vitest, Supabase and Blob faked): BE-UT-001 to 050. tests/unit/fakeSupabase.ts fakes createClient, so the
+  real lib/supabaseAdmin.ts admin() and requireAdmin run. Files: backendAccounts, backendUsername, backendLib, crons,
+  adminPassword, security, api-dev-server (the last four only got IDs in their titles; bodies unchanged).
+- Part B integration (real local Supabase), BE-IT-001 to 658: the 52 reference checks keep their titles (IDs from
+  tests/db/reference-ids.mjs, by exact title); extra.mjs titles got BE-IT-053 to 113; tests/db/backend.mjs BE-IT-114 to
+  162 (schema rules, every callable function, every trigger, billing math, receipt numbers, logs); tests/db/rls.mjs the
+  matrix BE-IT-200 to 579 (16 tables + 3 buckets x 4 operations x 5 callers) and controls BE-IT-580 to 655 (each
+  statement run as the database owner must work, so a "Refused" always comes from a policy: four delete targets were
+  changed to rows nothing points at so the controls hold); tests/db/api.mjs BE-IT-656 to 658, the real handlers via
+  Vite ssrLoadModule with temporary it.* accounts (usernames cannot contain "-"), removed after the run.
+- reports/db.json keeps passed and failed (the gate) and adds tests: id, title, status, durationMs, error.
+- Part C: tests/catalog/backend.json (671 entries) from scripts/backend-catalog.mjs (npm run catalog:backend); fields
+  live next to the newer tests, and in tests/catalog/meta.mjs for the older ones. tests/unit/backendCatalog.test.ts
+  fails on a missing or extra entry, an outdated entry, an empty field or an unknown requirement.
+- Part D: scripts/backend-report.mjs, npm run report:backend (full unit run so reports/vitest.json keeps the gate's
+  count, then test:db, then the docx). It reopens the .docx and checks every table has rows, every Status is filled
+  and the totals match. Defects: tests/catalog/defects.json (from NOTES and reviews; earlier review files were
+  overwritten by their re-reviews). Passwords are not printed (they live only in .env.test). The report itself is in
+  reports/, which is git-ignored.
+- Coverage: every FR and NFR has back-end tests except NFR-001 (usability, front end only).
 - Red verify (2026-10-29, fixed 2026-10-30): m03 "manager swap" failed at its last step with an empty "Active Tenant"
   list, so Maria was never made manager again and m05, m10, m11 and m17 failed after it. Cause: the helper read the
   options with allTextContents(), which does not wait, while the popup was still opening on a busy machine. It passed

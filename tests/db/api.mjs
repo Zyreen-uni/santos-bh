@@ -16,8 +16,8 @@ export function apiCases() {
     },
     {
       id: 'BE-IT-657', req: 'FR-028', module: 'M19', title: 'api/admin/password resets a tenant password: the new one signs in, the old one does not, one log row without the password',
-      input: 'As the owner, POST { tenantId: <it.ben>, password: it-new-2026 } to api/admin/password.',
-      expected: '200; it.ben signs in with it-new-2026 and not with the old password; one auth_password log row that does not contain the password; a tenant caller gets 403.',
+      input: 'As the owner, POST { tenantId: <it.ben>, password: <a new password> } to api/admin/password.',
+      expected: '200; it.ben signs in with the new password and not with the old one; one auth_password log row that does not contain the password; a tenant caller gets 403.',
     },
     {
       id: 'BE-IT-658', req: 'FR-031', module: 'M11', title: 'api/account/username changes the profile and the login email together',

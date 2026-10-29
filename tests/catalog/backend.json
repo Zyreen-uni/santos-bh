@@ -502,7 +502,7 @@
  {
   "id": "BE-IT-001",
   "level": "Integration",
-  "requirement": "FR-019",
+  "requirement": "FR-007",
   "module": "Reference design",
   "description": "manager saves utility bills and tenant bills update at once",
   "input": "The manager saves October: room 101 ₱1,200, room 201 ₱600, rest house ₱900.",
@@ -702,7 +702,7 @@
  {
   "id": "BE-IT-021",
   "level": "Integration",
-  "requirement": "NFR-004",
+  "requirement": "FR-008",
   "module": "Reference design",
   "description": "tenant sees only their own bills, payments and receipts",
   "input": "Ben and Carl read bills, payments and receipts.",
@@ -8975,8 +8975,8 @@
   "requirement": "FR-028",
   "module": "M19",
   "description": "api/admin/password resets a tenant password: the new one signs in, the old one does not, one log row without the password",
-  "input": "As the owner, POST { tenantId: <it.ben>, password: it-new-2026 } to api/admin/password.",
-  "expected": "200; it.ben signs in with it-new-2026 and not with the old password; one auth_password log row that does not contain the password; a tenant caller gets 403.",
+  "input": "As the owner, POST { tenantId: <it.ben>, password: <a new password> } to api/admin/password.",
+  "expected": "200; it.ben signs in with the new password and not with the old one; one auth_password log row that does not contain the password; a tenant caller gets 403.",
   "file": "tests/db/api.mjs"
  },
  {

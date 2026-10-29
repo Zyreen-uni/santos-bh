@@ -7,7 +7,7 @@ const REF = 'Reference design';
 
 export const META = {
   // ------------------------------------------------ reference checks (tests/db/suite.mjs)
-  'BE-IT-001': ['FR-019', REF, 'The manager saves October: room 101 ₱1,200, room 201 ₱600, rest house ₱900.', '3 bills; Ben: rent 1,500, electric 600, water 300, total 2,400; Carl electric 600.'],
+  'BE-IT-001': ['FR-007', REF, 'The manager saves October: room 101 ₱1,200, room 201 ₱600, rest house ₱900.', '3 bills; Ben: rent 1,500, electric 600, water 300, total 2,400; Carl electric 600.'],
   'BE-IT-002': ['FR-021', REF, 'Save the bills while Dina has no room.', 'Dina has no bill.'],
   'BE-IT-003': ['FR-022', REF, 'Save the bills for rooms with 2 and 1 tenants.', 'Every tenant\'s rent is ₱1,500.'],
   'BE-IT-004': ['FR-022', REF, 'Save October, change the rent to ₱1,600, save October and November.', 'October keeps ₱1,500; November uses ₱1,600.'],
@@ -27,7 +27,7 @@ export const META = {
   'BE-IT-018': ['FR-010', REF, 'Ben inserts a payment already verified.', 'Refused: a payment starts as pending.'],
   'BE-IT-019': ['FR-010', REF, 'Ben sends GCash with no proof or no reference.', 'Refused.'],
   'BE-IT-020': ['FR-010', REF, 'Ben gives a proof path in another tenant\'s folder.', 'Refused.'],
-  'BE-IT-021': ['NFR-004', REF, 'Ben and Carl read bills, payments and receipts.', 'Each sees only their own.'],
+  'BE-IT-021': ['FR-008', REF, 'Ben and Carl read bills, payments and receipts.', 'Each sees only their own.'],
   'BE-IT-022': ['NFR-004', REF, 'Ben reads the tenants table.', 'Only his own record.'],
   'BE-IT-023': ['FR-018', REF, 'Ben edits his contact, then another tenant\'s.', 'Own contact saved; the other is not changed.'],
   'BE-IT-024': ['NFR-003', REF, 'Ben sets his own role to admin.', 'Refused.'],

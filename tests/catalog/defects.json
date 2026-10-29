@@ -1,0 +1,65 @@
+[
+ {
+  "module": "M3",
+  "defect": "A login the owner created made a second, empty tenant record, and the owner's record stayed without a login: Supabase Auth's createUser writes app_metadata after the insert, so the sign-up trigger did not see the tenant id.",
+  "fix": "Migration 20261023010000_link_owner_created_login.sql links the login when app_metadata.tenant_id arrives and removes the empty record.",
+  "source": "docs/NOTES.md, M3 plan",
+  "guards": ["BE-IT-067", "BE-IT-145", "BE-IT-656"]
+ },
+ {
+  "module": "M2, M3",
+  "defect": "A room with tenants could be deactivated or set below its number of tenants, and an inactive or full room could take a tenant (the browser checked, the database did not).",
+  "fix": "Migration 20261023000000_room_rules.sql: triggers on rooms and room_assignments.",
+  "source": "docs/NOTES.md, M3 plan (M2 review note)",
+  "guards": ["BE-IT-058", "BE-IT-060", "BE-IT-061", "BE-IT-150"]
+ },
+ {
+  "module": "M6",
+  "defect": "record_payment accepted an amount above the bill's balance; only the browser refused it.",
+  "fix": "Migration 20261026000000_concern_messages.sql replaces record_payment with a balance check.",
+  "source": "reports/reviews/M6.md",
+  "guards": ["BE-IT-088", "BE-IT-126"]
+ },
+ {
+  "module": "M14",
+  "defect": "A tenant's history logs could not name the owner or the manager who changed their records (row level security hides other profiles).",
+  "fix": "Migration 20261030000000_log_actors.sql: log_actors() gives only the names in the caller's own logs.",
+  "source": "docs/NOTES.md, M14 plan",
+  "guards": ["BE-IT-101", "BE-IT-138"]
+ },
+ {
+  "module": "M16",
+  "defect": "With CRON_SECRET not set, the cron paths accepted the header \"Bearer undefined\".",
+  "fix": "lib/cron.ts cronAllowed: timing-safe, and closed when no secret is set.",
+  "source": "docs/NOTES.md, M16 plan",
+  "guards": ["BE-UT-026", "BE-UT-039", "BE-UT-040"]
+ },
+ {
+  "module": "M18",
+  "defect": "The new permission check in generate_monthly_bills let a tenant through: with no role claim, auth.role() = 'service_role' is null, and \"not (... or null)\" does not raise.",
+  "fix": "coalesce(auth.role() = 'service_role', false) in migration 20261031000000_bill_snapshot.sql. The reference check BE-IT-011 caught it.",
+  "source": "docs/NOTES.md, M18 plan",
+  "guards": ["BE-IT-011", "BE-IT-112", "BE-IT-123"]
+ },
+ {
+  "module": "M18",
+  "defect": "A direct database session could not be told apart with current_setting('role'): inside a security definer function it always reads \"none\".",
+  "fix": "The check uses the login claims instead (a direct session has none).",
+  "source": "docs/NOTES.md, M18 plan",
+  "guards": ["BE-IT-105", "BE-IT-112"]
+ },
+ {
+  "module": "M18",
+  "defect": "Rounding each tenant's share to 2 decimals could make a room's shares not add up to its bill (for example 1,000 / 3).",
+  "fix": "generate_monthly_bills gives the leftover centavos one per tenant, so the shares add up exactly.",
+  "source": "docs/NOTES.md, M18 plan",
+  "guards": ["BE-IT-108", "BE-IT-155"]
+ },
+ {
+  "module": "M18",
+  "defect": "Utility Billing and the tenant screens divided the bills by today's tenants, while the saved shares use the month's snapshot, so after a joiner or a leaver the numbers disagreed.",
+  "fix": "month_split(month) gives the snapshot count per room; every screen uses it.",
+  "source": "reports/reviews/M18.md (first review) and docs/NOTES.md, M18 plan",
+  "guards": ["BE-IT-111", "BE-IT-136"]
+ }
+]

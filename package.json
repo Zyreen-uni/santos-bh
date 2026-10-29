@@ -15,7 +15,8 @@
     "seed": "node scripts/seed.mjs",
     "format": "prettier --write .",
     "create-owner": "node scripts/create-owner.mjs",
-    "catalog:backend": "node scripts/backend-catalog.mjs"
+    "catalog:backend": "node scripts/backend-catalog.mjs",
+    "report:backend": "node scripts/backend-report.mjs --run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -44,6 +45,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "docx": "^9.5.1",
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
