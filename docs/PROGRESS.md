@@ -22,5 +22,5 @@ Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>
 - [x] M17 Final pass
 - [x] M18 Monthly bills without the utility entry
 - [x] M19 Password reset and change
-- [ ] M20 Docs sync
+- [x] M20 Docs sync
 - [ ] M21 Back-end tests and report

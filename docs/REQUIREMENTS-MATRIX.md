@@ -1,7 +1,7 @@
 # Requirements matrix
 
 Each requirement from docs/requirements.md, the module that built it, and the tests that prove it. Status is from the
-last full `npm run verify` (2026-10-24: 135 unit, 105 database and 288 e2e tests, all passed, none skipped). Every e2e spec runs at three widths: laptop 1280x800, tablet 768x1024,
+last full `npm run verify` (2026-10-29: 159 unit, 113 database and 303 e2e tests, all passed, none skipped). Every e2e spec runs at three widths: laptop 1280x800, tablet 768x1024,
 phone 390x844. Unit tests are in tests/unit, database tests in tests/db (suite.mjs: the 52 reference checks;
 extra.mjs: the module checks, named by module), e2e tests in e2e.
 
@@ -35,15 +35,22 @@ extra.mjs: the module checks, named by module), e2e tests in e2e.
 | FR-024 | Everyone views the month's utility bills and photos | M5, M12 | e2e/m05-utility.spec.ts (read-only for tenants); e2e/m12-my-payments.spec.ts (utility bills) | Pass |
 | FR-025 | History logs: owner all, tenant own | M14 | e2e/m14-history-logs.spec.ts; tests/unit/logs.test.ts; db "M14" checks | Pass |
 | FR-026 | Owner downloads GCash proofs, one or a month's ZIP | M6 | e2e/m06-payments.spec.ts (ZIP and single download) | Pass |
+| FR-027 | Every active tenant's bill exists from the 1st; the month's split is a fixed snapshot | M18 | tests/db/extra.mjs ("M18 ..." checks: rent-only bills, shares later, joiner, leaver, mover, kept bills, month_split, refusals); tests/unit/crons.test.ts (bills before overdue); tests/unit/utility.test.ts (kept notice); e2e/m05-utility.spec.ts (kept bills named); e2e/m06-payments.spec.ts (joiner bills) | Pass |
+| FR-028 | Owner resets a tenant's password; every user changes their own | M19 | tests/unit/adminPassword.test.ts (401, 403, 400, 404, 409, 200, no password in the log); tests/unit/passwords.test.ts; e2e/m19-passwords.spec.ts (reset, tenant change, owner change, tenant refused) | Pass |
+| FR-029 | Owner records a cash or GCash payment; paid with a receipt at once; not above the balance | M6 | e2e/m06-payments.spec.ts (Record Payment); tests/db/extra.mjs ("M6 record_payment ..." and "M7 record_payment refuses an amount above the balance"); tests/unit/payments.test.ts | Pass |
+| FR-030 | Concerns are a conversation between the tenant and the owner | M7, M13 | e2e/m07-concerns.spec.ts; e2e/m13-my-concerns.spec.ts; tests/db/extra.mjs ("M7 ..." checks); tests/unit/concerns.test.ts | Pass |
+| FR-031 | A tenant changes their own username, which becomes the login | M11 | e2e/m11-profile.spec.ts ("a new username becomes the login"); tests/db/extra.mjs ("M11 change_username ..."); tests/unit/profile.test.ts | Pass |
+| FR-032 | A tenant sees their roommates and the room's 8 bed spaces | M11 | e2e/m11-profile.spec.ts ("My Room shows 8 bed spaces with 6 taken"); tests/db/extra.mjs ("M11 my_roommates ...") | Pass |
+| FR-033 | Owner sets the GCash account in Settings; tenants see it on My Payments | M12 | e2e/m12-my-payments.spec.ts ("Send to GCash: Brian Santos, 0917 555 0123"); tests/db/extra.mjs ("M12 the owner sets the GCash account ..."); tests/unit/settings.test.ts (GCash checks). Gap for QA: the Settings GCash popup has no e2e test. | Pass |
 
 ## Non-functional requirements
 
 | Id | Requirement (short) | Module | Tests | Status |
 |---|---|---|---|---|
 | NFR-001 | Simple interface, no training | All, M17 | Every e2e spec follows the designs' words; e2e/m17-user-stories.spec.ts; e2e/m17-accessibility.spec.ts | Pass |
-| NFR-002 | Desktop and mobile browsers | All | Every e2e spec at laptop, tablet and phone, with no horizontal scroll checks | Pass |
+| NFR-002 | Desktop and mobile browsers | All | Every e2e spec at laptop, tablet and phone (playwright.config.ts projects), with no horizontal scroll checks: e2e/m01-auth.spec.ts (Login and Register fit without scrolling), e2e/m17-user-stories.spec.ts, e2e/m17-accessibility.spec.ts | Pass |
 | NFR-003 | Login, separate owner, manager and tenant access | M1, M3, M5 | e2e/m01-auth.spec.ts (route guards); e2e/m05-utility.spec.ts ("For the Tenant Manager Only"); tests/unit/RequireRole.test.tsx | Pass |
-| NFR-004 | Tenants see only their own data | All | db reference RLS checks and "M17 every table has row level security"; e2e "a tenant sees only ..." checks in m03, m06, m12, m14 | Pass |
+| NFR-004 | Tenants see only their own data | All | tests/db/suite.mjs (reference RLS checks); tests/db/extra.mjs ("M17 every table has row level security", "M17 anon reads nothing"); e2e "a tenant sees only ..." checks in e2e/m03-tenants.spec.ts, e2e/m06-payments.spec.ts, e2e/m12-my-payments.spec.ts, e2e/m14-history-logs.spec.ts | Pass |
 | NFR-005 | Daily database backup | M16 | tests/unit/crons.test.ts (secret, file, 30 days plus the 1st) | Pass |
 | NFR-006 | Shrink before upload, refuse over 1 MB, shrink old photos | M5, M11, M12, M16 | tests/unit/photos.test.ts; e2e 1 MB refusals in m05, m12; tests/unit/crons.test.ts (same path, 400 px WebP) | Pass |
 

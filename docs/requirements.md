@@ -31,6 +31,11 @@ Source: docs/reference/paper/SantosBoardingHouse-revised-preview.pdf. Every modu
 - FR-026 (HIGH): The system shall allow the admin to download the GCash proof images tenants upload, one payment at a time or all proofs of a month as one ZIP file with a list of the payments.
 - FR-027 (HIGH): The system shall create each active tenant's monthly bill for the month by the 1st, with the rent, even before the utility bills are entered, and shall keep a month's bill split fixed to the tenants billed at the start of the month.
 - FR-028 (HIGH): The system shall allow the admin to reset a tenant's password, and allow every user to change their own password after entering the current one.
+- FR-029 (HIGH): The system shall allow the admin to record a cash or GCash payment the admin received directly, save it as paid with the next receipt number at once, and refuse an amount above the bill's balance.
+- FR-030 (HIGH): The system shall keep each concern as a conversation between the tenant and the admin (the tenant's report, the admin's replies and the tenant's answers), and use the admin's latest reply as the concern's response.
+- FR-031 (MEDIUM): The system shall allow a tenant to change their own username, which becomes their new login, and refuse a username that is taken or badly formed.
+- FR-032 (MEDIUM): The system shall show a tenant their roommates (name and date started only) and their room's 8 bed spaces, each marked taken, open or not used.
+- FR-033 (HIGH): The system shall allow the admin to set the GCash account name and number in Settings, and show them to tenants on My Payments when they send a GCash proof.
 
 ## Non-functional requirements
 - NFR-001 Usability: The system shall use a simple, intuitive interface that admins and tenants can operate without training.

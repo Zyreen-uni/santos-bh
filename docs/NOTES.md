@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M20 (then M21)
-Last green test count: 572 (156 unit, 113 db, 303 e2e incl. 3 seed steps)
+Current module: M21 (back-end tests and the QA report)
+Last green test count: 575 (159 unit, 113 db, 303 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -290,6 +290,18 @@ Open problems: none
   back, a tenant gets 403 from the API). m19 runs after every other spec, and each width has its own seed.
 - Also covers the M18 review note: keptProblem() in src/lib/utility.ts has a unit test.
 
+## M20 plan (docs sync, no app code)
+- FR-029 to FR-033 added to docs/requirements.md after checking the code: Record Payment takes Cash or GCash and refuses
+  more than the balance; concerns are conversations (concern_messages); username change via api/account/username;
+  My Room draws 8 bed spaces marked taken, open or not used (so FR-032 says that, not just "8 bed spaces"); the GCash
+  account is set in Settings and shown on My Payments. Priorities for FR-029 to FR-033 are suggestions.
+- docs/REQUIREMENTS-MATRIX.md: rows for FR-027 to FR-033. The new check tests/unit/requirementsMatrix.test.ts (every FR
+  and NFR has a row naming at least one existing test file) found two real gaps: the NFR-002 and NFR-004 rows named
+  no file. Fixed. Known gap for QA: the Settings GCash popup has no e2e test (db and unit only).
+- docs/PAPER-CHANGES.md for the human: new FR rows and user stories, ERD changes (concern_messages,
+  billing_settings.gcash_name/gcash_number, monthly_bills.in_split, the announcement message check), DFD level 1 and 2
+  boxes and arrows (Scheduler, Backups store, password flows), flowchart pages 04 to 13.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -317,3 +329,4 @@ Open problems: none
 - After M17 (2026-10-26): Login and Register share one compact card (src/pages/AuthPage.tsx) that fits laptop, tablet and phone without scrolling; animated-background pill and transition-panel (new local mode="wait" so the two forms never coexist) with a measured height animation. Dev/test port 5317 -> 5417 (Windows reserved 5236-5335). 538 tests (142 unit, 105 db, 291 e2e).
 - M18 Monthly bills without the utility entry: bill_snapshot migration (in_split snapshot, generate for the service role and direct sessions, centavo-exact split, joiner bills, bills_kept, month_split), cron makes the month's bills before overdue, kept-bills notice and snapshot counts on Utility Billing and tenant screens. 549 tests. Review PASS after one FAIL.
 - M19 Password reset and change: api/admin/password (owner resets, logged without the password), Change Password for tenants (Edit Profile) and the owner (Settings), MIN_PASSWORD in lib/accounts.ts, README with the owner's own recovery. 572 tests. Review PASS.
+- M20 Docs sync: FR-029 to FR-033 (checked against the code), matrix rows FR-027 to FR-033, requirementsMatrix check (found 2 rows with no file), docs/PAPER-CHANGES.md. 575 tests. Review PASS.
