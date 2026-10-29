@@ -14,7 +14,8 @@
     "verify": "npm run lint && npm run typecheck && npm run test:unit && npm run test:db && npm run build && npm run test:e2e",
     "seed": "node scripts/seed.mjs",
     "format": "prettier --write .",
-    "create-owner": "node scripts/create-owner.mjs"
+    "create-owner": "node scripts/create-owner.mjs",
+    "catalog:backend": "node scripts/backend-catalog.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
