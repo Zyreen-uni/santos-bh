@@ -160,3 +160,41 @@ and the app match:
   `monthly_bills.in_split`, the GCash settings columns and every other column the migrations after
   20261019010000 added), and the DFD and flowchart pages that need a new box or arrow.
 - Checks: every FR in docs/requirements.md has a row in the matrix with at least one test file.
+
+## M21 Back-end tests and report (QA hand-off)
+Scope: api/, lib/, supabase/migrations, tests/db, tests/unit for the back end, tests/catalog, scripts/backend-report.mjs.
+No React components and no e2e tests change in this module. Keep the 52 reference checks unchanged.
+- Part A, unit tests (Vitest, Supabase and Vercel Blob mocked), success and every error path:
+  - api/admin/accounts: 405, 401, 403 tenant, 400 bad username, 400 short password, 404, 409 has a login, 409 taken, 201.
+  - api/admin/password: the same cases, plus no password text in the log row.
+  - api/account/username: 401, 400 bad format, 403 inactive, 409 taken, profile rolled back when the email update fails, 200.
+  - api/cron/backup: 401 wrong or missing secret, closed when CRON_SECRET is unset, generate_monthly_bills then
+    refresh_overdue, every table saved, 30 days plus each 1st kept, Manila date in file names.
+  - api/cron/shrink-photos: 401, same path, 400 px WebP, skips photos in archived_photos, records both sizes.
+  - lib/: loginEmail, USERNAME, timing-safe secret check, retention rule, HttpError, requireAdmin.
+- Part B, integration tests (real local Supabase, tests/db, each test rolled back):
+  1. Schema rules: capacity 1 to 8, unique room numbers, due day 1 to 28, rent above 0, one current room per tenant,
+     one tenant manager, utility meter rules, a GCash payment needs a proof and a reference.
+  2. Row level security matrix: every table and bucket, select/insert/update/delete as owner, tenant manager,
+     tenant, another tenant and anon, with the exact allowed and refused results.
+  3. Every rpc function: success, refusal for the wrong role, bad input.
+  4. Every trigger: handle_new_user (both paths), guard_tenant_update, on_tenant_inactive, on_payment_submitted,
+     log_change on every logged table, room rules, announcement published_at, the M18 joiner bill.
+  5. Billing math end to end: totals, even split, rounding to the centavo, snapshot after mid-month changes, overdue,
+     receipt numbers OR-000001 upward with no gaps.
+  6. History logs: one row per change with actor, action, old and new values; a tenant reads only their own; nobody
+     edits or deletes a log.
+  7. API integration: api/admin/accounts, api/admin/password and api/account/username against the local Supabase
+     with no mocks, checking the database and auth state after each call.
+- Part C, IDs and catalog: BE-UT-001 upward (unit) and BE-IT-001 upward (integration) at the start of every back-end
+  test title. tests/catalog/backend.json: id, level, requirement, module, description, input or steps, expected
+  result in plain English. A check fails when a test has no catalog entry or an entry has no test.
+- Part D, the Word report: devDependency "docx", scripts/backend-report.mjs, npm script "report:backend" (runs the
+  back-end unit and integration tests, then builds reports/Backend-Test-Report.docx from reports/vitest.json,
+  reports/db.json with each test's id, status, duration and error, and tests/catalog/backend.json; no result typed by
+  hand). Contents in order: cover, scope, summary, unit table, integration table, access control matrix, requirement
+  coverage, defects found and fixed, notes for QA, sign-off. Letter size, landscape tables, Arial 11 pt, repeated
+  table headers, Pass in green and Fail in red. Open the file after building it and check every table has rows, every
+  Status cell is filled and the totals match the summary.
+- Prepared by: Gillado, Jhon Michael V., Back-End Developer. Submitted to: Castillo, Zyreen Mae M., Quality Assurance.
+  Approved by: Mayores, Darylle F., Project Manager.
