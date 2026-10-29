@@ -79,7 +79,7 @@ beforeEach(() => {
 });
 
 describe('cron secret', () => {
-  it('turns away a wrong or missing secret with 401, and touches nothing', async () => {
+  it('BE-UT-025 cron: turns away a wrong or missing CRON_SECRET with 401, and touches nothing', async () => {
     for (const handler of [backup, shrink]) {
       expect((await call(handler, 'Bearer wrong')).status).toBe(401);
       expect((await call(handler)).status).toBe(401);
@@ -88,7 +88,7 @@ describe('cron secret', () => {
     expect(blob.put).not.toHaveBeenCalled();
   });
 
-  it('lets nobody in when CRON_SECRET is not set, not even "Bearer undefined"', async () => {
+  it('BE-UT-026 cron: lets nobody in when CRON_SECRET is not set, not even "Bearer undefined"', async () => {
     delete process.env.CRON_SECRET;
     expect((await call(backup, 'Bearer undefined')).status).toBe(401);
     expect(cronAllowed({ headers: { authorization: 'Bearer ' } }, '')).toBe(false);
@@ -97,7 +97,7 @@ describe('cron secret', () => {
 });
 
 describe('backup', () => {
-  it('marks overdue bills first, then saves every table to one file named by the Manila date', async () => {
+  it('BE-UT-027 backup: marks overdue bills, then saves every table to one file named by the Manila date', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-22T18:00:00Z')); // 02:00 on Oct 23 in Manila
     db.rows = { rooms: [{ room_id: 1 }], tenants: Array.from({ length: 1500 }, (_, i) => ({ tenant_id: i })) };
@@ -115,7 +115,7 @@ describe('backup', () => {
     expect(out.body).toMatchObject({ saved: 'backups/santos-bh-2026-10-23.json', overdue: 3 });
   });
 
-  it('makes the Manila month\'s bills before it marks overdue bills (FR-027)', async () => {
+  it('BE-UT-028 backup: makes the Manila month\'s bills before it marks overdue bills', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-31T16:30:00Z')); // 00:30 on Nov 1 in Manila: already November there
     const calls: string[] = [];
@@ -129,7 +129,7 @@ describe('backup', () => {
     expect(out.body).toMatchObject({ bills: 27 });
   });
 
-  it('stops with 500 before refresh_overdue and saves nothing when the bills cannot be made', async () => {
+  it('BE-UT-029 backup: stops with 500 before refresh_overdue and saves nothing when the bills cannot be made', async () => {
     db.rpc.mockImplementation(async (name: string) => (name === 'generate_monthly_bills' ? { data: null, error: { message: 'down' } } : { data: 0, error: null }));
     const out = await call(backup, OK);
     expect(out.status).toBe(500);
@@ -138,7 +138,7 @@ describe('backup', () => {
     expect(blob.put).not.toHaveBeenCalled();
   });
 
-  it('keeps the last 30 days and the 1st of each month, and deletes the rest', async () => {
+  it('BE-UT-030 backup: keeps the last 30 days and the 1st of each month, and deletes the rest', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-23T01:00:00Z'));
     const days = ['2026-10-23', '2026-09-24', '2026-09-23', '2026-09-01', '2026-08-15', '2026-08-01', '2025-01-01'];
@@ -150,14 +150,14 @@ describe('backup', () => {
     expect(out.body).toMatchObject({ removed: 2 });
   });
 
-  it('retention rule by day', () => {
+  it('BE-UT-031 backup: the retention rule by day', () => {
     expect(keepBackup('2026-10-23', '2026-10-23')).toBe(true);
     expect(keepBackup('2026-09-24', '2026-10-23')).toBe(true); // 29 days old: the 30th file
     expect(keepBackup('2026-09-23', '2026-10-23')).toBe(false);
     expect(keepBackup('2024-02-01', '2026-10-23')).toBe(true);
   });
 
-  it('stops with 500 and saves nothing when the database fails', async () => {
+  it('BE-UT-032 backup: stops with 500 and saves nothing when the database fails', async () => {
     db.rpc.mockResolvedValue({ data: null, error: { message: 'down' } });
     const out = await call(backup, OK);
     expect(out.status).toBe(500);
@@ -167,7 +167,7 @@ describe('backup', () => {
 });
 
 describe('shrink photos', () => {
-  it('swaps each old photo for a small WebP at the same path and records it', async () => {
+  it('BE-UT-033 shrink: swaps each old photo for a 400 px WebP at the same path and records both sizes', async () => {
     const photo = await sharp({ create: { width: 1600, height: 2400, channels: 3, background: '#88aacc' } }).jpeg({ quality: 95 }).toBuffer();
     db.files = { 'u1/proof.webp': photo };
     db.rpc.mockResolvedValue({ data: [{ bucket_id: 'proofs', path: 'u1/proof.webp' }, { bucket_id: 'bills', path: 'missing.jpg' }], error: null });
@@ -182,5 +182,29 @@ describe('shrink photos', () => {
     expect(up.body.length).toBeLessThan(photo.length);
     expect(db.inserts).toEqual([{ table: 'archived_photos', row: { bucket_id: 'proofs', path: 'u1/proof.webp', original_bytes: photo.length, new_bytes: up.body.length } }]);
     expect(out.body).toMatchObject({ shrunk: 1, failed: ['missing.jpg'] });
+  });
+});
+
+describe('shrink photos, the other paths (M21)', () => {
+  it('BE-UT-034 shrink: turns away a wrong or missing CRON_SECRET with 401 and reads no photo', async () => {
+    expect((await call(shrink, 'Bearer nope')).status).toBe(401);
+    expect((await call(shrink)).status).toBe(401);
+    expect(db.rpc).not.toHaveBeenCalled();
+    expect(db.uploads).toEqual([]);
+  });
+
+  it('BE-UT-035 shrink: works only on the list photos_due_for_shrink gives (it leaves out photos in archived_photos)', async () => {
+    // The database excludes archived photos (checked in the integration tests); the job shrinks exactly what it is given.
+    db.files = { 'u1/old.webp': await sharp({ create: { width: 900, height: 900, channels: 3, background: '#335577' } }).jpeg().toBuffer(), 'u1/archived.webp': Buffer.from('x') };
+    db.rpc.mockResolvedValue({ data: [{ bucket_id: 'proofs', path: 'u1/old.webp' }], error: null });
+    const out = await call(shrink, OK);
+    expect(db.uploads.map((u) => u.path)).toEqual(['u1/old.webp']);
+    expect(out.body).toMatchObject({ shrunk: 1, failed: [] });
+  });
+
+  it('BE-UT-036 shrink: stops with 500 when the list of photos cannot be read', async () => {
+    db.rpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } });
+    expect(await call(shrink, OK)).toMatchObject({ status: 500, body: { error: 'permission denied' } });
+    expect(db.uploads).toEqual([]);
   });
 });

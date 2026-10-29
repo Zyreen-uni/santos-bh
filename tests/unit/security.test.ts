@@ -15,7 +15,7 @@ function files(dir: string): string[] {
 }
 
 describe('secrets stay on the server', () => {
-  it('no file in src/ names a server secret', () => {
+  it('BE-UT-045 no file in src/ names a server secret', () => {
     const hits = files('src').flatMap((f) => {
       const text = readFileSync(f, 'utf8');
       return SECRETS.filter((s) => text.includes(s)).map((s) => `${f}: ${s}`);
@@ -23,7 +23,7 @@ describe('secrets stay on the server', () => {
     expect(hits).toEqual([]);
   });
 
-  it('no VITE_ variable (sent to the browser) holds a secret', () => {
+  it('BE-UT-046 no VITE_ variable (sent to the browser) holds a secret', () => {
     const vite = readdirSync('.')
       .filter((f) => f.startsWith('.env'))
       .flatMap((f) => readFileSync(f, 'utf8').split(/\r?\n/))
@@ -32,7 +32,7 @@ describe('secrets stay on the server', () => {
     for (const name of vite) expect(name).toMatch(/^VITE_SUPABASE_(URL|ANON_KEY)$/);
   });
 
-  it('the server secrets are read only in api/ and lib/', () => {
+  it('BE-UT-047 api/ and lib/ use no VITE_ variable', () => {
     for (const dir of ['api', 'lib']) {
       for (const f of files(dir)) expect(readFileSync(f, 'utf8')).not.toMatch(/VITE_/);
     }

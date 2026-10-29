@@ -2,7 +2,7 @@
 
 Current module: M21 (back-end tests and the QA report)
 Last green test count: 575 (159 unit, 113 db, 303 e2e incl. 3 seed steps)
-Open problems: none
+Open problems: M21 in progress (see "M21 status" below)
 
 ## Local setup facts (read after a context reset)
 - Another local Supabase project ("Honoris") on this machine uses the default ports 54321-54329.
@@ -330,3 +330,17 @@ Open problems: none
 - M18 Monthly bills without the utility entry: bill_snapshot migration (in_split snapshot, generate for the service role and direct sessions, centavo-exact split, joiner bills, bills_kept, month_split), cron makes the month's bills before overdue, kept-bills notice and snapshot counts on Utility Billing and tenant screens. 549 tests. Review PASS after one FAIL.
 - M19 Password reset and change: api/admin/password (owner resets, logged without the password), Change Password for tenants (Edit Profile) and the owner (Settings), MIN_PASSWORD in lib/accounts.ts, README with the owner's own recovery. 572 tests. Review PASS.
 - M20 Docs sync: FR-029 to FR-033 (checked against the code), matrix rows FR-027 to FR-033, requirementsMatrix check (found 2 rows with no file), docs/PAPER-CHANGES.md. 575 tests. Review PASS.
+
+## M21 status (in progress, not reviewed)
+- Done: Part A unit tests BE-UT-001 to BE-UT-050 (tests/unit/backendAccounts, backendUsername, backendLib, crons,
+  adminPassword, security, api-dev-server; tests/unit/fakeSupabase.ts mocks createClient so the real admin() and
+  requireAdmin run). Part B IDs: tests/db/reference-ids.mjs (BE-IT-001 to 052 by exact title, suite.mjs unchanged),
+  extra.mjs titles BE-IT-053 to 113.
+- Next: run.mjs saves each test's id, status, duration and error in reports/db.json (keep passed/failed);
+  tests/db/backend.mjs (schema rules, every rpc, every trigger, billing math, receipt numbers, logs) from BE-IT-114;
+  tests/db/rls.mjs access matrix (16 tables + 3 buckets x select/insert/update/delete x owner, manager (anna),
+  tenant (ben, own rows), another tenant (carl on ben's rows), anon), expected cells drafted from pg_policies:
+  rooms never deleted, payments have no update policy, manager cannot update utility_bills, archived_photos refuses all;
+  tests/db/api.mjs real-API calls via Vite ssrLoadModule outside the transaction, temporary users cleaned up;
+  tests/catalog/backend.json + check; docx devDependency, scripts/backend-report.mjs, "report:backend" (runs the full
+  unit suite into reports/vitest.json so the gate's count never drops, then test:db, then builds the report).

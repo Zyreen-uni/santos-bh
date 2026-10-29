@@ -21,17 +21,17 @@ describe('api dev server', { timeout: 30_000 }, () => {
     await server.close();
   });
 
-  it('runs the function for /api/<name>', async () => {
+  it('BE-UT-048 the dev server runs the function for /api/<name>', async () => {
     const res = await fetch(`${base}/api/cron/backup`, { headers: { authorization: 'Bearer wrong' } });
     expect(res.status).toBe(401);
   });
 
-  it('answers 404 for a function that does not exist', async () => {
+  it('BE-UT-049 the dev server answers 404 for a function that does not exist', async () => {
     const res = await fetch(`${base}/api/nothing-here`);
     expect(res.status).toBe(404);
   });
 
-  it('passes the JSON body and method to the function', async () => {
+  it('BE-UT-050 the dev server passes the JSON body and method to the function', async () => {
     const res = await fetch(`${base}/api/admin/accounts`, { method: 'GET' });
     expect(res.status).toBe(405);
     expect(await res.json()).toEqual({ error: 'Use POST' });

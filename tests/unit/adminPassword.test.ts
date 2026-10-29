@@ -73,29 +73,29 @@ beforeEach(() => {
 });
 
 describe('api/admin/password', () => {
-  it('405 for anything but POST', async () => {
+  it('BE-UT-011 refuses any method but POST with 405', async () => {
     expect((await post({ tenantId: 12, password: 'new-pass-2026' }, 'owner-token', 'GET')).status).toBe(405);
   });
 
-  it('401 without a session, 403 for a tenant', async () => {
+  it('BE-UT-012 refuses no session with 401 and a tenant caller with 403', async () => {
     expect((await post({ tenantId: 12, password: 'new-pass-2026' }, '')).status).toBe(401);
     expect((await post({ tenantId: 12, password: 'new-pass-2026' }, 'ben-token')).status).toBe(403);
     expect(state.updates).toEqual([]);
   });
 
-  it('400 for a password under 8 characters or none', async () => {
+  it('BE-UT-013 refuses a password under 8 characters, or none, with 400', async () => {
     expect(await post({ tenantId: 12, password: 'short' })).toMatchObject({ status: 400, body: { error: 'Password must have at least 8 characters' } });
     expect((await post({ tenantId: 12 })).status).toBe(400);
   });
 
-  it('404 for an unknown tenant, 409 for a tenant without a login or an inactive one', async () => {
+  it('BE-UT-014 answers 404 for an unknown tenant, 409 for a tenant without a login or an inactive one', async () => {
     expect((await post({ tenantId: 99, password: 'new-pass-2026' })).status).toBe(404);
     expect(await post({ tenantId: 13, password: 'new-pass-2026' })).toMatchObject({ status: 409, body: { error: 'This tenant has no login yet' } });
     expect(await post({ tenantId: 14, password: 'new-pass-2026' })).toMatchObject({ status: 409, body: { error: 'This tenant is inactive' } });
     expect(state.updates).toEqual([]);
   });
 
-  it('200: sets the password on the tenant\'s login and logs it without the password', async () => {
+  it('BE-UT-015 sets the password with 200 and writes one log row with no password text', async () => {
     const out = await post({ tenantId: 12, password: 'new-pass-2026' });
     expect(out).toMatchObject({ status: 200, body: { tenantId: 12 } });
     expect(state.updates).toEqual([{ id: 'ben-uid', attrs: { password: 'new-pass-2026' } }]);
@@ -104,7 +104,7 @@ describe('api/admin/password', () => {
     expect(JSON.stringify(state.logs[0])).not.toContain('new-pass-2026');
   });
 
-  it('500 with the reason when Supabase refuses, and no log row', async () => {
+  it('BE-UT-016 passes a Supabase refusal on as 500 with its reason, and writes no log row', async () => {
     state.updateError = { message: 'Password is known to be weak' };
     expect(await post({ tenantId: 12, password: 'password123' })).toMatchObject({ status: 500, body: { error: 'Password is known to be weak' } });
     expect(state.logs).toEqual([]);
