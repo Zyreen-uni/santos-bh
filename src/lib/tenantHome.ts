@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchBills, latestReceipt, pendingProof, todayPH, type Bill } from '@/lib/payments';
 import { fetchConcerns, type Concern } from '@/lib/concerns';
 import { fetchAnnouncements, type Announcement } from '@/lib/announcements';
+import { fetchSplitCounts, splitTotal } from '@/lib/utility';
 
 export interface MyRoom {
   room_id: number;
@@ -15,7 +16,8 @@ export interface TenantHome {
   bill: Bill | null; // the bill to act on: the oldest overdue, else the latest month
   roomBill: number | null; // the room meter bill of that month
   restHouseBill: number | null;
-  totalTenants: number; // active tenants in all rooms (the water split)
+  totalTenants: number; // tenants the water bill splits between in the bill's month (the snapshot)
+  roomSplit: number; // tenants this room's bill splits between in the bill's month (the snapshot)
   room: MyRoom | null;
   monthlyRent: number;
   announcements: Announcement[]; // the 3 newest published
@@ -56,7 +58,10 @@ export async function fetchTenantHome(): Promise<TenantHome> {
   let roomBill: number | null = null;
   let restHouseBill: number | null = null;
   const month = bill?.billing_month ?? todayPH().slice(0, 8) + '01';
-  const utility = await supabase.from('utility_bills').select('meter_type, room_id, amount').eq('billing_month', month);
+  const [utility, split] = await Promise.all([
+    supabase.from('utility_bills').select('meter_type, room_id, amount').eq('billing_month', month),
+    fetchSplitCounts(month),
+  ]);
   if (utility.error) throw utility.error;
   for (const u of utility.data ?? []) {
     if (u.meter_type === 'rest_house') restHouseBill = Number(u.amount);
@@ -70,7 +75,8 @@ export async function fetchTenantHome(): Promise<TenantHome> {
     bill,
     roomBill,
     restHouseBill,
-    totalTenants: occupancy.reduce((n, o) => n + o.active_tenants, 0),
+    totalTenants: splitTotal(split),
+    roomSplit: room ? (split.get(room.room_id) ?? 0) : 0,
     room,
     monthlyRent: Number(settings.data!.monthly_rent),
     announcements: published.slice(0, 3),

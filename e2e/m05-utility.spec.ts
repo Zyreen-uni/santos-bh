@@ -35,12 +35,12 @@ async function myBill(page: Page) {
 
 test('the manager sees the October bills with the split from the sample', async ({ page }, info) => {
   await openAsManager(page);
-  await expect(page.getByText('October 2026, 27 active tenants')).toBeVisible();
+  await expect(page.getByText('October 2026, 27 tenants this month')).toBeVisible();
   const rows: [string, string, string, string][] = [
-    ['Room 101 meter', '1,960', 'Building 1, 7 active tenants', '₱280 each'],
-    ['Room 102 meter', '1,800', 'Building 1, 6 active tenants', '₱300 each'],
-    ['Room 201 meter', '2,400', 'Building 2, 8 active tenants', '₱300 each'],
-    ['Room 202 meter', '1,560', 'Building 2, 6 active tenants', '₱260 each'],
+    ['Room 101 meter', '1,960', 'Building 1, 7 tenants this month', '₱280 each'],
+    ['Room 102 meter', '1,800', 'Building 1, 6 tenants this month', '₱300 each'],
+    ['Room 201 meter', '2,400', 'Building 2, 8 tenants this month', '₱300 each'],
+    ['Room 202 meter', '1,560', 'Building 2, 6 tenants this month', '₱260 each'],
     ['Rest house meter', '810', 'Water pump, all 27 tenants', '₱30 each'],
   ];
   for (const [label, amount, detail, each] of rows) {
@@ -92,25 +92,34 @@ test('"Invalid Input" names the meter with no amount, and OK goes back to the fo
   await expect(meter(page, 'Room 201 meter')).toHaveValue('');
 });
 
-test('the owner corrects a bill with a new photo and the tenant bills update at once', async ({ page }) => {
+test('the owner corrects a bill with a new photo: unpaid bills update at once, paid ones are kept and named', async ({ page }, info) => {
   await openAsOwner(page);
   await expect(page.getByText('rent per tenant ₱1,500')).toBeVisible();
   await meter(page, 'Room 102 meter').fill('1,860');
   await page.getByLabel('Bill photo for Room 102 meter', { exact: true }).setInputFiles({ name: 'bill-102.png', mimeType: 'image/png', buffer: await samplePng() });
   await expect(page.getByText('bill-102.png')).toBeVisible();
   await (await compute(page)).getByRole('button', { name: 'OK' }).click();
-  const maria = async () => {
-    const res = await restAsPageUser(page, 'GET', 'monthly_bills?select=electric_share,total_amount,status,tenants!inner(full_name)&billing_month=eq.2026-10-01&tenants.full_name=eq.Maria%20Reyes');
+  const billOf = async (name: string) => {
+    const res = await restAsPageUser(page, 'GET', `monthly_bills?select=electric_share,total_amount,status,tenants!inner(full_name)&billing_month=eq.2026-10-01&tenants.full_name=eq.${encodeURIComponent(name)}`);
     return ((await res.json()) as { electric_share: number; total_amount: number; status: string }[])[0];
   };
-  expect(await maria()).toMatchObject({ electric_share: 310, total_amount: 1840, status: 'pending' });
+  // Rina has no payment: 1,860 / 6. Maria sent a GCash proof (pending), so her bill never changes (M18).
+  expect(await billOf('Rina Flores')).toMatchObject({ electric_share: 310, total_amount: 1840, status: 'unpaid' });
+  expect(await billOf('Maria Reyes')).toMatchObject({ electric_share: 300, total_amount: 1830, status: 'pending' });
+  // Room 102: Maria pending, Carla and Kim paid.
+  const kept = page.getByRole('status', { name: 'Bills not changed' });
+  await expect(kept).toContainText('Room 102: 3 bills already paid, not changed');
+  await kept.scrollIntoViewIfNeeded();
+  await expectNoHorizontalScroll(page);
+  await screen(page, info, 'M18', 'bills-not-changed');
   const photo = await restAsPageUser(page, 'GET', 'utility_bills?select=photo_path,entered_by&billing_month=eq.2026-10-01&room_id=not.is.null&amount=eq.1860');
   expect(((await photo.json()) as { photo_path: string }[])[0].photo_path).toBe('2026-10/room-102.webp');
 
   // Put the October sample back.
   await meter(page, 'Room 102 meter').fill('1,800');
   await (await compute(page)).getByRole('button', { name: 'OK' }).click();
-  expect(await maria()).toMatchObject({ electric_share: 300, total_amount: 1830, status: 'pending' });
+  expect(await billOf('Rina Flores')).toMatchObject({ electric_share: 300, total_amount: 1830, status: 'unpaid' });
+  expect(await billOf('Maria Reyes')).toMatchObject({ electric_share: 300, total_amount: 1830, status: 'pending' });
 });
 
 test('a bill photo opens from the form', async ({ page }) => {

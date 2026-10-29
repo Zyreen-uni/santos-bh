@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { balance, dayMonth, fetchBills, latestReceipt, pendingProof, type Bill } from '@/lib/payments';
 import { uploadProof } from '@/lib/photos';
 import { billToShow } from '@/lib/tenantHome';
+import { fetchSplitCounts, splitTotal } from '@/lib/utility';
 
 export interface MeterBill {
   label: string; // "Room 102 meter" or "Rest house meter"
@@ -20,28 +21,28 @@ export interface MyPayments {
 }
 
 export async function fetchMyPayments(): Promise<MyPayments> {
-  const [bills, stay, settings, counts] = await Promise.all([
+  const [bills, stay, settings] = await Promise.all([
     fetchBills(),
     supabase.from('room_assignments').select('room_id, rooms(room_number, buildings(name))').is('date_ended', null).maybeSingle(),
     supabase.from('billing_settings').select('gcash_name, gcash_number').single(),
-    supabase.rpc('room_occupancy'),
   ]);
-  for (const r of [stay, settings, counts]) if (r.error) throw r.error;
+  for (const r of [stay, settings]) if (r.error) throw r.error;
   const s = stay.data as unknown as { room_id: number; rooms: { room_number: string; buildings: { name: string } } } | null;
-  const occupancy = (counts.data ?? []) as { room_id: number; active_tenants: number }[];
   const current = billToShow(bills);
   const month = current?.billing_month ?? null;
 
   let utility: MyPayments['utility'] = null;
   if (month) {
-    const [rows, who] = await Promise.all([
+    // The month's split (M18): the tenants on that month's bills, not who lives there now.
+    const [rows, who, split] = await Promise.all([
       supabase.from('utility_bills').select('meter_type, room_id, amount, photo_path').eq('billing_month', month),
       supabase.rpc('utility_entered', { p_month: month }),
+      fetchSplitCounts(month),
     ]);
     if (rows.error) throw rows.error;
     if (who.error) throw who.error;
-    const all = occupancy.reduce((n, o) => n + o.active_tenants, 0);
-    const mine = occupancy.find((o) => o.room_id === s?.room_id)?.active_tenants ?? 0;
+    const all = splitTotal(split);
+    const mine = s ? (split.get(s.room_id) ?? 0) : 0;
     const meter = (label: string, amount: number, photo_path: string, people: number): MeterBill => ({
       label, amount, photo_path, people, each: people ? Math.round((amount / people) * 100) / 100 : 0,
     });

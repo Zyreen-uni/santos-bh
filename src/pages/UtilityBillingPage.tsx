@@ -10,11 +10,12 @@ import { useAuth } from '@/lib/auth';
 import { uploadBillPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
 import {
-  checkMeters, fetchUtility, monthLabel, parseAmount, share, signedPhotoUrl, type MeterEntry, type MeterRoom, type UtilityData,
+  checkMeters, fetchKept, fetchUtility, keptNote, monthLabel, parseAmount, share, signedPhotoUrl, type KeptRoom, type MeterEntry, type MeterRoom,
+  type UtilityData,
 } from '@/lib/utility';
 import { cn, peso } from '@/lib/utils';
 
-type Message = { title: string; text?: string; tone: 'ok' | 'bad' } | null;
+type Message = { title: string; text?: string; tone: 'ok' | 'bad' | 'warn' } | null;
 
 const fileName = (path: string) => path.split('/').pop() ?? path;
 
@@ -147,6 +148,7 @@ function BillsForm({ data, canEdit, myRoomId, isAdmin }: { data: UtilityData; ca
   const [badKey, setBadKey] = useState('');
   const [photo, setPhoto] = useState('');
   const [message, setMessage] = useState<Message>(null);
+  const [kept, setKept] = useState<KeptRoom[]>([]); // after a save: bills left as they were
   const yyyyMm = data.month.slice(0, 7);
   const monthName = monthLabel(data.month);
 
@@ -190,14 +192,22 @@ function BillsForm({ data, canEdit, myRoomId, isAdmin }: { data: UtilityData; ca
     },
     onSuccess: async (n) => {
       setFiles({});
+      // Which bills kept their amounts because they are already paid (M18). If that check fails, the save still stands.
+      let keptProblem = '';
+      try {
+        setKept(await fetchKept(data.month));
+      } catch (e) {
+        setKept([]);
+        keptProblem = ` Saved, but could not check which bills were already paid: ${e instanceof Error ? e.message : String(e)}`;
+      }
       await queryClient.invalidateQueries({ queryKey: ['utility'] });
       await queryClient.invalidateQueries({ queryKey: ['bills'] });
       const due = new Date(Date.UTC(Number(data.month.slice(0, 4)), Number(data.month.slice(5, 7)) - 1, data.dueDay));
       const dueText = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
       setMessage({
         title: 'Monthly Bills Generated',
-        text: `${n} ${monthName.split(' ')[0]} ${n === 1 ? 'bill is' : 'bills are'} ready. Tenants see them on their dashboard now. Due ${dueText}.`,
-        tone: 'ok',
+        text: `${n} ${monthName.split(' ')[0]} ${n === 1 ? 'bill is' : 'bills are'} ready. Tenants see them on their dashboard now. Due ${dueText}.${keptProblem}`,
+        tone: keptProblem ? 'warn' : 'ok',
       });
     },
     onError: (e) => setMessage({ title: 'Could Not Save the Bills', text: e.message, tone: 'bad' }),
@@ -236,7 +246,7 @@ function BillsForm({ data, canEdit, myRoomId, isAdmin }: { data: UtilityData; ca
           {billed.map((r) =>
             row(`room-${r.room_id}`, {
               title: `Room ${r.room_number} meter`,
-              detail: `${r.building}, ${r.activeTenants} active ${r.activeTenants === 1 ? 'tenant' : 'tenants'}`,
+              detail: `${r.building}, ${r.activeTenants} ${r.activeTenants === 1 ? 'tenant' : 'tenants'} this month`,
               icon: 'zap',
               each: eachOf(r),
               savedPath: data.roomBills[r.room_id]?.photo_path,
@@ -271,8 +281,16 @@ function BillsForm({ data, canEdit, myRoomId, isAdmin }: { data: UtilityData; ca
             </span>
           </div>
         )}
+        {kept.length > 0 && (
+          <div role="status" aria-label="Bills not changed" className="flex flex-col gap-1 rounded-[20px] bg-warn-bg p-4 text-[13px] leading-normal text-warn">
+            {kept.map((r) => (
+              <span key={r.room_number}>{keptNote(r)}</span>
+            ))}
+          </div>
+        )}
         <p className="m-0 rounded-[20px] bg-card p-4 text-[13px] leading-normal text-muted">
-          Electric share = room bill ÷ active tenants in the room. Water share = rest house bill ÷ all {data.totalTenants} tenants.
+          Electric share: the room bill split between the room's tenants on this month's bills. Water share: the rest house bill split
+          between all {data.totalTenants} tenants on this month's bills. A tenant who joins mid-month pays rent only until next month.
         </p>
         {canEdit && (
           <div className="flex gap-2.5">
@@ -320,7 +338,7 @@ export default function UtilityBillingPage() {
   });
   const data = utility.data;
   const subtitle = data
-    ? `${monthLabel(data.month)}, ${data.totalTenants} active tenants${isAdmin ? `, rent per tenant ${peso(data.monthlyRent)}` : account?.isManager ? ', Tenant Manager' : ''}`
+    ? `${monthLabel(data.month)}, ${data.totalTenants} tenants this month${isAdmin ? `, rent per tenant ${peso(data.monthlyRent)}` : account?.isManager ? ', Tenant Manager' : ''}`
     : undefined;
 
   return (

@@ -130,7 +130,7 @@ export default function TenantDashboard() {
   const breakdown: [string, ReactNode][] = bill
     ? [
         ['Rent', peso(bill.rent_share)],
-        ['Electric share', `${peso(bill.electric_share)}${home?.roomBill && home.room ? ` (Room ${home.room.room_number} bill ${peso(home.roomBill)} ÷ ${home.room.occupants})` : ''}`],
+        ['Electric share', `${peso(bill.electric_share)}${home?.roomBill && home.room ? ` (Room ${home.room.room_number} bill ${peso(home.roomBill)} ÷ ${home.roomSplit})` : ''}`],
         ['Water share', `${peso(bill.water_share)}${home?.restHouseBill ? ` (${peso(home.restHouseBill)} ÷ ${home.totalTenants})` : ''}`],
       ]
     : [];

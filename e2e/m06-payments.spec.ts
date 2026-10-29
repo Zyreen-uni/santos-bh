@@ -28,10 +28,17 @@ const panel = (page: Page, tabName = 'All') => page.getByRole('tabpanel', { name
 const rowOf = (page: Page, info: TestInfo, name: string, tabName = 'All') =>
   isPhone(info) ? panel(page, tabName).getByRole('listitem').filter({ hasText: name }) : panel(page, tabName).getByRole('row').filter({ hasText: name });
 
-test('the status tabs count the sample: All 27, Pending 3, Unpaid 12, Overdue 1, Paid 11', async ({ page }, info) => {
+// The 27 sample bills, plus the 2 tenants M3 adds on Oct 19 (Paolo and Lara): they join after the October bills
+// exist, so they get a rent-only bill at once, and keep it when M3 marks them inactive (M18, docs/decisions.md).
+test('the status tabs count the sample and the 2 joiners: All 29, Pending 3, Unpaid 14, Overdue 1, Paid 11', async ({ page }, info) => {
   await openPayments(page);
   await expect(page.getByText('October 2026 bills, due Oct 25')).toBeVisible();
-  expect(await counts(page)).toEqual({ All: 27, Pending: 3, Unpaid: 12, Overdue: 1, Paid: 11 });
+  expect(await counts(page)).toEqual({ All: 29, Pending: 3, Unpaid: 14, Overdue: 1, Paid: 11 });
+  // M3 names them "Paolo <width><number>" and "Lara <width><number>" (the sample also has Paolo Santiago and Clara).
+  for (const joiner of [`Paolo ${info.project.name}`, `Lara ${info.project.name}`]) {
+    await expect(rowOf(page, info, joiner)).toContainText('₱1,500');
+    await expect(rowOf(page, info, joiner)).toContainText('Unpaid');
+  }
   const maria = rowOf(page, info, 'Maria Reyes');
   if (info.project.name === 'laptop') {
     for (const cell of ['102', '₱1,500', '₱300', '₱30', '₱1,830', 'Oct 25', 'Pending', 'View Proof']) await expect(maria).toContainText(cell);
@@ -57,7 +64,7 @@ test('the status tabs count the sample: All 27, Pending 3, Unpaid 12, Overdue 1,
 test('after the due day an unpaid bill shows as Overdue', async ({ page }) => {
   await shiftClock(page, new Date('2026-10-26T09:00:00+08:00'));
   await openPayments(page);
-  expect(await counts(page)).toEqual({ All: 27, Pending: 3, Unpaid: 0, Overdue: 13, Paid: 11 });
+  expect(await counts(page)).toEqual({ All: 29, Pending: 3, Unpaid: 0, Overdue: 15, Paid: 11 });
   await tab(page, 'Overdue').click();
   await expect(panel(page, 'Overdue')).toContainText('Rina Flores');
 });

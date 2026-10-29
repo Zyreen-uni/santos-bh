@@ -115,6 +115,29 @@ describe('backup', () => {
     expect(out.body).toMatchObject({ saved: 'backups/santos-bh-2026-10-23.json', overdue: 3 });
   });
 
+  it('makes the Manila month\'s bills before it marks overdue bills (FR-027)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-31T16:30:00Z')); // 00:30 on Nov 1 in Manila: already November there
+    const calls: string[] = [];
+    db.rpc.mockImplementation(async (name: string, args: unknown) => {
+      calls.push(`${name} ${JSON.stringify(args)}`);
+      return { data: name === 'generate_monthly_bills' ? 27 : 0, error: null };
+    });
+    const out = await call(backup, OK);
+    expect(out.status).toBe(200);
+    expect(calls).toEqual(['generate_monthly_bills {"p_month":"2026-11-01"}', 'refresh_overdue {"p_today":"2026-11-01"}']);
+    expect(out.body).toMatchObject({ bills: 27 });
+  });
+
+  it('stops with 500 before refresh_overdue and saves nothing when the bills cannot be made', async () => {
+    db.rpc.mockImplementation(async (name: string) => (name === 'generate_monthly_bills' ? { data: null, error: { message: 'down' } } : { data: 0, error: null }));
+    const out = await call(backup, OK);
+    expect(out.status).toBe(500);
+    expect(out.body).toMatchObject({ error: 'generate_monthly_bills: down' });
+    expect(db.rpc).not.toHaveBeenCalledWith('refresh_overdue', expect.anything());
+    expect(blob.put).not.toHaveBeenCalled();
+  });
+
   it('keeps the last 30 days and the 1st of each month, and deletes the rest', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-23T01:00:00Z'));

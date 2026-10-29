@@ -1,6 +1,6 @@
 // Database checks added by later modules (new migrations or module checks). They run after the
 // 52 reference checks, with the same seed, inside the same rolled-back transaction.
-export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ganna }) {
+export function extraTests(db, { as, denied, eq, ids, MONTH, saveBills, ROOMS, bill, ganna }) {
   return {
     // ---------------- M2 Manage Rooms
     'M2 owner adds, edits and deactivates a room': async () => {
@@ -485,6 +485,99 @@ export function extraTests(db, { as, denied, eq, ids, saveBills, ROOMS, bill, ga
         const r = await as(null, `select count(*)::int as n from public.${t}`).catch(() => ({ rows: [{ n: 0 }] }));
         eq(r.rows[0].n, 0, `anon rows in ${t}`);
       }
+    },
+    // ---------------- M18 Monthly bills without the utility entry (migration 20261031000000_bill_snapshot.sql)
+    'M18 with no utility bills, the daily job makes a rent-only bill for every active tenant with a room': async () => {
+      // The cron calls it with the service role key.
+      await db.query('savepoint svc');
+      await db.query(`select set_config('request.jwt.claims', '{"role":"service_role"}', true)`);
+      await db.query('set local role service_role');
+      const n = (await db.query(`select public.generate_monthly_bills($1) as n`, [MONTH])).rows[0].n;
+      await db.query('reset role');
+      await db.query('release savepoint svc');
+      eq(n, 3, 'bills in the split');
+      for (const t of ['anna', 'ben', 'carl']) {
+        const b = await bill(t);
+        eq(`${b.rent_share} ${b.electric_share} ${b.water_share} ${b.in_split}`, '1500.00 0.00 0.00 true', `${t} rent only`);
+      }
+      eq(await bill('dina'), undefined, 'dina has no room, no bill');
+      // A direct database session (SQL Editor) may run it too, and running it again changes nothing.
+      await db.query(`select set_config('request.jwt.claims', '', true)`);
+      eq((await db.query(`select public.generate_monthly_bills($1) as n`, [MONTH])).rows[0].n, 3, 'again');
+      eq((await db.query(`select count(*) from public.monthly_bills where billing_month = $1`, [MONTH])).rows[0].count, 3, 'no duplicates');
+    },
+    'M18 saving the utility bills after that fills the shares of the same bills': async () => {
+      await db.query(`select set_config('request.jwt.claims', '', true)`);
+      await db.query(`select public.generate_monthly_bills($1)`, [MONTH]);
+      const before = (await bill('ben')).bill_id;
+      await saveBills(ids.anna, ROOMS());
+      const b = await bill('ben');
+      eq(b.bill_id, before, 'same bill');
+      eq(`${b.electric_share} ${b.water_share}`, '600.00 300.00', 'ben: 1200 / 2, 900 / 3');
+      eq((await bill('carl')).electric_share, '600.00', 'carl: 600 / 1');
+    },
+    'M18 a tenant added mid-month gets rent only, outside the split, and nobody else changes': async () => {
+      await ganna();
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id, date_started) values ($1, $2, '2026-10-15')`, [ids.t_dina, ids.r101]);
+      const d = await bill('dina');
+      eq(`${d.rent_share} ${d.electric_share} ${d.water_share} ${d.in_split}`, '1500.00 0.00 0.00 false', 'dina joiner bill');
+      eq(`${(await bill('ben')).electric_share} ${(await bill('ben')).water_share}`, '600.00 300.00', 'ben unchanged');
+      await saveBills(ids.anna, ROOMS());
+      eq(`${(await bill('ben')).electric_share} ${(await bill('ben')).water_share}`, '600.00 300.00', 'ben still on 2 and 3');
+      eq((await bill('dina')).electric_share, '0.00', 'dina still no shares');
+      // A start in an older month makes no bill for that month.
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id, date_started) values ($1, $2, '2026-08-01')`, [ids.t_fe, ids.r201]);
+      eq((await db.query(`select count(*) from public.monthly_bills where tenant_id = $1`, [ids.t_fe])).rows[0].count, 0, 'no back-dated bill');
+    },
+    'M18 a tenant marked inactive mid-month keeps the bill, and a re-save stays on the snapshot': async () => {
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id) values ($1, $2)`, [ids.t_dina, ids.r101]);
+      const rooms = [{ room_id: ids.r101, amount: 1000, photo_path: '2026-10/101.jpg' }, { room_id: ids.r201, amount: 600, photo_path: '2026-10/201.jpg' }];
+      await saveBills(ids.anna, rooms);
+      const room101 = async () => (await db.query(`select electric_share from public.monthly_bills where billing_month = $1 and room_id = $2 order by tenant_id`, [MONTH, ids.r101])).rows.map((r) => r.electric_share);
+      eq((await room101()).join(' '), '333.34 333.33 333.33', '1000 / 3 to the centavo');
+      await as(ids.owner, `update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_ben]);
+      eq((await bill('ben')).electric_share, '333.33', 'ben keeps the bill');
+      await saveBills(ids.anna, rooms);
+      const after = await room101();
+      eq(after.length, 3, 'three bills in room 101');
+      eq(after.reduce((s, v) => s + Math.round(Number(v) * 100), 0), 100000, 'shares add up to the room bill');
+      eq((await bill('anna')).electric_share, '333.34', 'anna still on the snapshot count, not 1000 / 2');
+    },
+    'M18 a tenant moved mid-month keeps the old room on that month\'s bill': async () => {
+      await ganna();
+      await as(ids.owner, `select public.move_tenant($1, $2, '2026-10-20')`, [ids.t_ben, ids.r201]);
+      eq((await bill('ben')).room_id, ids.r101, 'october stays on room 101');
+      await saveBills(ids.anna, ROOMS());
+      eq((await bill('ben')).electric_share, '600.00', 'ben: room 101, 1200 / 2');
+      eq((await bill('carl')).electric_share, '600.00', 'carl: room 201 still splits by 1');
+    },
+    'M18 a re-save never changes a bill with a verified or pending payment, and bills_kept reports it': async () => {
+      await ganna();
+      await as(ids.ben, `insert into public.payments (bill_id, amount, method, reference_no, proof_path) values ($1, 2400, 'gcash', '1023', $2)`, [(await bill('ben')).bill_id, `${ids.ben}/oct.webp`]);
+      await as(ids.owner, `select * from public.record_payment($1, 2400, '2026-10-20', 'cash')`, [(await bill('carl')).bill_id]);
+      const rooms = [{ room_id: ids.r101, amount: 1000, photo_path: '2026-10/101.jpg' }, { room_id: ids.r201, amount: 800, photo_path: '2026-10/201.jpg' }];
+      await saveBills(ids.anna, rooms);
+      eq((await bill('ben')).electric_share, '600.00', 'pending: not changed');
+      eq((await bill('carl')).electric_share, '600.00', 'paid: not changed');
+      eq((await bill('anna')).electric_share, '500.00', 'anna: 1000 / 2');
+      const kept = (await as(ids.anna, `select room_number, kept from public.bills_kept($1)`, [MONTH])).rows.map((r) => `${r.room_number}:${r.kept}`);
+      eq(kept.join(' '), '101:1 201:1', 'kept per room');
+      await denied(ids.ben, `select * from public.bills_kept($1)`, [MONTH]);
+    },
+    'M18 month_split counts the snapshot per room, not who lives there now': async () => {
+      await ganna();
+      const split = async (uid) => Object.fromEntries((await as(uid, `select room_id, tenants from public.month_split($1)`, [MONTH])).rows.map((r) => [String(r.room_id), r.tenants]));
+      eq(JSON.stringify(await split(ids.carl)), JSON.stringify({ [ids.r101]: 2, [ids.r201]: 1 }), 'any tenant sees the counts');
+      await as(ids.owner, `insert into public.room_assignments (tenant_id, room_id, date_started) values ($1, $2, '2026-10-15')`, [ids.t_dina, ids.r101]);
+      await as(ids.owner, `update public.tenants set status = 'inactive' where tenant_id = $1`, [ids.t_ben]);
+      eq((await split(ids.carl))[ids.r101], 2, 'joiner not counted, leaver still counted');
+      eq((await as(ids.carl, `select * from public.month_split('2026-12-01')`)).rowCount, 0, 'no bills that month');
+      await denied(null, `select * from public.month_split($1)`, [MONTH]);
+    },
+    'M18 a tenant or a signed-out visitor cannot run generate_monthly_bills': async () => {
+      await denied(ids.ben, `select public.generate_monthly_bills($1)`, [MONTH]);
+      await denied(null, `select public.generate_monthly_bills($1)`, [MONTH]);
+      eq((await db.query(`select count(*) from public.monthly_bills where billing_month = $1`, [MONTH])).rows[0].count, 0, 'no bills');
     },
     'M3 manager swap: the old manager loses the role at once': async () => {
       eq((await as(ids.owner, `insert into public.tenant_manager (setting_id, tenant_id) values (1, $1)

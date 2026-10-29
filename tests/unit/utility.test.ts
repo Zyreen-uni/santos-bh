@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkMeters, monthLabel, parseAmount, share, type MeterEntry } from '@/lib/utility';
+import { checkMeters, keptNote, monthLabel, parseAmount, share, type MeterEntry } from '@/lib/utility';
 import { assertUploadSize, MAX_UPLOAD_BYTES } from '@/lib/photos';
 
 const meter = (m: Partial<MeterEntry> = {}): MeterEntry => ({ key: 'room-3', label: 'Room 201', amount: '2,400', hasPhoto: true, ...m });
@@ -52,5 +52,13 @@ describe('photos', () => {
 
   it('names months like the designs', () => {
     expect(monthLabel('2026-10-01')).toBe('October 2026');
+  });
+});
+
+// M18: a re-save leaves bills with a verified or pending payment as they were, and says so per room.
+describe('bills not changed by a re-save', () => {
+  it('names the room and the count, in the words of docs/decisions.md', () => {
+    expect(keptNote({ room_number: '101', kept: 1 })).toBe('Room 101: 1 bill already paid, not changed');
+    expect(keptNote({ room_number: '102', kept: 3 })).toBe('Room 102: 3 bills already paid, not changed');
   });
 });

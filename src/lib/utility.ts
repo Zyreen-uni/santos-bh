@@ -4,7 +4,7 @@ export interface MeterRoom {
   room_id: number;
   room_number: string;
   building: string;
-  activeTenants: number;
+  activeTenants: number; // tenants the room bill splits between this month (the snapshot)
 }
 
 export interface SavedBill {
@@ -33,22 +33,39 @@ export function monthLabel(iso: string) {
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
+// How many tenants each room's bill splits between in a month (M18 snapshot): the month's bills when it has some,
+// otherwise the active tenants now, which is who the first bills will include.
+export async function fetchSplitCounts(month: string): Promise<Map<number, number>> {
+  const split = await supabase.rpc('month_split', { p_month: month });
+  if (split.error) throw split.error;
+  let rows = (split.data ?? []) as { room_id: number; tenants: number }[];
+  if (!rows.length) {
+    const now = await supabase.rpc('room_occupancy');
+    if (now.error) throw now.error;
+    rows = ((now.data ?? []) as { room_id: number; active_tenants: number }[]).map((r) => ({ room_id: r.room_id, tenants: r.active_tenants }));
+  }
+  return new Map(rows.map((r) => [Number(r.room_id), r.tenants]));
+}
+
+export const splitTotal = (counts: Map<number, number>) => [...counts.values()].reduce((n, c) => n + c, 0);
+
 export async function fetchUtility(month?: string): Promise<UtilityData> {
-  const [rooms, counts, settings, months] = await Promise.all([
+  const [rooms, settings, months] = await Promise.all([
     supabase.from('rooms').select('room_id, room_number, status, buildings(name)').neq('status', 'inactive').order('room_number'),
-    supabase.rpc('room_occupancy'),
     supabase.from('billing_settings').select('monthly_rent, due_day').single(),
     supabase.from('utility_bills').select('billing_month').order('billing_month', { ascending: false }),
   ]);
-  for (const r of [rooms, counts, settings, months]) if (r.error) throw r.error;
+  for (const r of [rooms, settings, months]) if (r.error) throw r.error;
 
   const now = currentMonth();
   const monthList = [...new Set([now, ...(months.data ?? []).map((m) => m.billing_month as string)])].sort().reverse();
   const chosen = month ?? now;
-  const bills = await supabase.from('utility_bills').select('meter_type, room_id, amount, photo_path').eq('billing_month', chosen);
+  const [bills, countOf] = await Promise.all([
+    supabase.from('utility_bills').select('meter_type, room_id, amount, photo_path').eq('billing_month', chosen),
+    fetchSplitCounts(chosen),
+  ]);
   if (bills.error) throw bills.error;
 
-  const countOf = new Map((counts.data as { room_id: number; active_tenants: number }[]).map((c) => [c.room_id, c.active_tenants]));
   const meterRooms = (rooms.data as unknown as { room_id: number; room_number: string; buildings: { name: string } }[]).map((r) => ({
     room_id: r.room_id,
     room_number: r.room_number,
@@ -74,8 +91,24 @@ export async function fetchUtility(month?: string): Promise<UtilityData> {
   };
 }
 
-// The same rounding as generate_monthly_bills: 2 decimals.
+// The live preview: 2 decimals. (generate_monthly_bills also spreads the leftover centavos one per tenant, so a
+// room's shares add up to its bill exactly; the preview shows the even share.)
 export const share = (amount: number, people: number) => (people > 0 ? Math.round((amount / people) * 100) / 100 : 0);
+
+// Bills a save did not change because they already have a verified or pending payment (M18, bills_kept).
+export interface KeptRoom {
+  room_number: string;
+  kept: number;
+}
+
+export async function fetchKept(month: string): Promise<KeptRoom[]> {
+  const { data, error } = await supabase.rpc('bills_kept', { p_month: month });
+  if (error) throw error;
+  return (data ?? []) as KeptRoom[];
+}
+
+// "Room 101: 1 bill already paid, not changed" (docs/decisions.md, 2026-10-29). A pending GCash proof counts as paid.
+export const keptNote = (r: KeptRoom) => `Room ${r.room_number}: ${r.kept} ${r.kept === 1 ? 'bill' : 'bills'} already paid, not changed`;
 
 // "1,960" or "1960.50" as a number; NaN when empty or not a number.
 export function parseAmount(text: string) {

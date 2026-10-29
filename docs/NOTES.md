@@ -1,7 +1,7 @@
 # Notes
 
-Current module: none (all done). Waiting for the human: deployment, see docs/NEEDS_HUMAN.md
-Last green test count: 538 (142 unit, 105 db, 291 e2e incl. 3 seed steps)
+Current module: M19 (then M20, M21)
+Last green test count: 549 (145 unit, 113 db, 291 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -243,6 +243,36 @@ Open problems: none
 - docs/REQUIREMENTS-MATRIX.md: each FR and NFR with its module and tests.
 - Then docs/NEEDS_HUMAN.md with the deployment steps, and stop.
 
+## M18 plan (FR-027, FR-020, FR-021)
+- Flowchart pages 6 and 12, design Util-A, MyPay-A. Decisions "Added 2026-10-29" in docs/decisions.md.
+- Migration 20261031000000_bill_snapshot.sql: monthly_bills.in_split; generate_monthly_bills replaced (same signature
+  and integer return, so the 52 reference checks stay unchanged): inserts missing bills (joiners in_split = false,
+  no shares), never changes room_id, updates only in_split bills with no verified or pending payment, splits on the
+  snapshot count, and spreads leftover centavos one per tenant (by tenant_id) so a room's shares add up exactly.
+  Returns the number of bills in the month's split (so "27 October bills are ready" counts the split, not joiners).
+  bills_kept(month) for the notice; bill_joiner trigger on room_assignments; index payments(bill_id).
+- Who may run generate: owner, manager, service role, or a direct database session (session_user postgres with no
+  login claims). Two traps found on the way: current_setting('role') reads "none" inside a security definer
+  function, and "auth.role() = 'service_role'" is null without a role claim, so "not (... or null)" let a tenant
+  through. Fixed with coalesce; the reference check "tenant cannot compute bills directly" caught it.
+- Joiner month (deviation, deterministic): the month the stay starts, when it is the latest month with bills. The
+  spec said "the current Manila month"; for a tenant who starts today it is the same. With the literal rule the e2e
+  results would change with the real date (M3 adds tenants starting Oct 19, the database clock is real). The daily
+  generate also adds any missing bill for active tenants, so nobody is left out.
+- Notice wording: "Room 102: 3 bills already paid, not changed" (the decision's own words); a pending GCash proof
+  counts as paid there.
+- Test changes from the new rules, not weakened: M5 "owner corrects" now checks Rina (unpaid, changes) and Maria
+  (pending, kept) plus the notice; M6 counts include the 2 tenants M3 adds on Oct 19 (All 29, Unpaid 14 / Overdue 15)
+  and check that their bills are rent only.
+- api/cron/backup: generate_monthly_bills for the Manila month, then refresh_overdue (unit test for the order).
+- To confirm with Mr. Santos: full rent and no utility shares for a tenant who joins mid-month (built as default).
+- Review 1 FAIL, fixed: (1) the Utility Billing preview, the tenant dashboard and My Payments divided by current
+  occupancy; they now use month_split(month), the snapshot counts (current occupancy only for a month with no bills
+  yet), and the text says "N tenants this month" / "split between the room's tenants on this month's bills";
+  (2) a failed bills_kept check now says "Saved, but could not check which bills were already paid"; (3) the
+  notice has screenshots in reports/screens/M18 with a no-horizontal-scroll check. Known edge: a tenant who moved
+  rooms mid-month sees the new room's meter on the tenant screens (the bill itself stays on the old room).
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -268,3 +298,4 @@ Open problems: none
 - M16 Crons: lib/cron.ts (timing-safe secret, closed when unset; 30 days plus every 1st), backup runs refresh_overdue first and saves 15 tables by Manila date; shrink keeps the path; mocked Blob/Supabase unit tests. 499 tests. Review PASS.
 - M17 Final pass: user-story walk and axe (WCAG 2.1 AA, no serious issues) on every page at three widths, keyboard dialogs, security checks (secrets, RLS, private buckets, anon), docs/REQUIREMENTS-MATRIX.md. 528 tests. Review PASS.
 - After M17 (2026-10-26): Login and Register share one compact card (src/pages/AuthPage.tsx) that fits laptop, tablet and phone without scrolling; animated-background pill and transition-panel (new local mode="wait" so the two forms never coexist) with a measured height animation. Dev/test port 5317 -> 5417 (Windows reserved 5236-5335). 538 tests (142 unit, 105 db, 291 e2e).
+- M18 Monthly bills without the utility entry: bill_snapshot migration (in_split snapshot, generate for the service role and direct sessions, centavo-exact split, joiner bills, bills_kept, month_split), cron makes the month's bills before overdue, kept-bills notice and snapshot counts on Utility Billing and tenant screens. 549 tests. Review PASS after one FAIL.
