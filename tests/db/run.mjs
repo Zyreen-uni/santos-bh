@@ -13,6 +13,7 @@ import { extraTests } from './extra.mjs';
 import { REFERENCE_IDS } from './reference-ids.mjs';
 import { rlsControlTests, rlsTests } from './rls.mjs';
 import { backendTests } from './backend.mjs';
+import { runApiTests } from './api.mjs';
 
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL || localSupabase().dbUrl });
 let passed = 0, failed = 0;
@@ -62,6 +63,28 @@ try {
 } finally {
   await db.query('rollback').catch(() => {});
   await db.query(`select setval('public.receipt_number_seq', $1, $2)`, [seq.last_value, seq.is_called]);
+}
+
+// The API functions against the real Auth and database (they cannot run inside the transaction above). They use
+// their own temporary accounts and remove them again.
+try {
+  await runApiTests({
+    db,
+    local: localSupabase(),
+    record: async (c, fn) => {
+      const name = `${c.id} ${c.title}`;
+      const start = performance.now();
+      let error = null;
+      try { await fn(); passed++; console.log(`  pass  ${name}`); }
+      catch (e) { failed++; error = e.message; console.log(`  FAIL  ${name}\n        ${e.message}`); }
+      results.push({ id: c.id, title: name, status: error ? 'failed' : 'passed', durationMs: Math.round(performance.now() - start), error });
+    },
+  });
+} catch (e) {
+  failed++;
+  results.push({ id: null, title: 'API tests setup', status: 'failed', durationMs: 0, error: e.message });
+  console.log(`  FAIL  API tests setup\n        ${e.message}`);
+} finally {
   await db.end();
 }
 
