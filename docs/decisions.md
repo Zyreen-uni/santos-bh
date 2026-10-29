@@ -51,3 +51,23 @@ These win over anything older in the paper or the reference files.
 - Vercel serverless functions: `api/admin/accounts`, `api/cron/backup`, `api/cron/shrink-photos`. The service role key lives only in these functions.
 - Vercel Blob for backups.
 - Animations from motion-primitives (see docs/design.md).
+
+## Added 2026-10-29
+- Every active tenant with a current room gets a bill for every month, even when nobody enters the utility bills.
+  The daily cron creates the month's bills from day 1 (Manila time) with rent and the utility shares known so far
+  (0 until the utility bills are saved).
+- The month's split is a snapshot. The tenants who have a bill with `in_split = true` for that month and room are the
+  people the room bill splits between. The water split uses every `in_split` bill of the month. The first bills of the
+  month set the snapshot from the active tenants with a current room at that moment.
+- A tenant who joins after the month's bills exist gets a bill at once with the full rent and no utility shares
+  (`in_split = false`). Full shares start next month.
+- A tenant who leaves or is marked inactive mid-month keeps that month's bill as made. A tenant who moves rooms
+  mid-month keeps that month's bill on the old room. Both changes take effect next month.
+- Saving the utility bills again recomputes the shares of that month's `in_split` bills, using the snapshot count,
+  never current occupancy. A bill with any verified payment or a pending payment never changes. If a recompute skips
+  a bill for that reason, Utility Billing says so ("Room 101: 1 bill already paid, not changed").
+- The owner resets a tenant's password from the tenant's profile. Logins use `<username>@santosbh.local`, so a reset
+  email cannot arrive. The owner gives the new password to the tenant in person.
+- A tenant changes their own password in My Profile, after typing the current password.
+- To confirm with Mr. Santos (build the default above, note it in docs/NOTES.md): full rent for a tenant who joins
+  mid-month, and no utility shares for that first month.

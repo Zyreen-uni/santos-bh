@@ -20,3 +20,6 @@ Tick a module only after its tests pass, the reviewer wrote reports/reviews/<id>
 - [x] M15 Logout
 - [x] M16 Crons, backups and storage
 - [x] M17 Final pass
+- [ ] M18 Monthly bills without the utility entry
+- [ ] M19 Password reset and change
+- [ ] M20 Docs sync

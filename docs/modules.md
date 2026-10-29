@@ -98,3 +98,65 @@ Build them in this order. Each module lists its requirements, its flowchart page
 - Security review: no service role key in src/, every table has RLS, every bucket is private.
 - Write docs/REQUIREMENTS-MATRIX.md: each FR and NFR, the test files that prove it, and pass status.
 - Then stop for the human: deployment needs their Supabase and Vercel accounts (see CLAUDE.md, Human checkpoints).
+
+## M18 Monthly bills without the utility entry (FR-027, FR-020, FR-021)
+- Flowchart pages 6 and 12. Design: Util-A, MyPay-A. No new screens. One new notice line on Utility Billing.
+- New migration (for example `20261031000000_bill_snapshot.sql`):
+  - `monthly_bills.in_split boolean not null default true`.
+  - Replace `generate_monthly_bills(p_month)`:
+    - Allow the owner, the manager, the service role and `session_user = 'postgres'` (same check as `refresh_overdue`).
+    - Insert missing bills for active tenants with a current room. If the month already has bills, new ones get
+      `in_split = false`, `electric_share = 0`, `water_share = 0`.
+    - On conflict, never change `room_id`. Update shares only for `in_split` bills that have no verified or pending
+      payment. Room count = `in_split` bills of that month and room. Water count = `in_split` bills of the month.
+    - Keep the return type `integer` and the same signature for `generate_monthly_bills` and `save_utility_bills`.
+      The 52 reference db checks rely on them, and they must stay unchanged and green.
+    - Add `bills_kept(p_month date)` (owner or manager only): per room, how many bills of the month have a verified
+      or pending payment. Utility Billing calls it after a save to show the skipped notice.
+  - Add a trigger on `room_assignments` insert: if the tenant has no bill for the current Manila month and that month
+    already has bills, insert the joiner bill at once.
+- api/cron/backup.ts: run `generate_monthly_bills` for the current Manila month before `refresh_overdue`.
+- Checks (db tests in tests/db/extra.mjs, named "M18 ..."):
+  - With no utility bills saved, the cron call creates a rent-only bill for every active tenant with a room.
+  - Saving utility bills after that fills the shares, and the room bill splits evenly among `in_split` bills.
+  - A tenant added mid-month gets rent only, `in_split = false`, and the other shares do not change.
+  - A tenant marked inactive mid-month keeps the bill. A re-save keeps the remaining roommates' shares on the
+    snapshot count, so the room's shares still add up to the room bill (to the centavo after rounding).
+  - A tenant moved mid-month keeps the old room on that month's bill.
+  - A re-save never changes a bill with a verified or pending payment, and reports it as skipped.
+  - A tenant cannot run `generate_monthly_bills`.
+- Unit test for the cron order (generate before refresh_overdue). An e2e check that Utility Billing shows the skipped notice.
+
+## M19 Password reset and change (FR-028, NFR-003)
+- Flowchart pages 4 and 11. Design: Tenants-B (profile panel), Prof-C (Edit Profile). Reuse the existing Modal, Field
+  and popup styles. Words: "Reset Password", "Change Password", "Current Password", "New Password",
+  "Confirm New Password", "Password Changed".
+- api/admin/password.ts: `POST { tenantId, password }`. `requireAdmin`, password at least `MIN_PASSWORD`, tenant must
+  have a login and be active. `admin().auth.admin.updateUserById(user_id, { password })`. Write one row to
+  `activity_logs` (action `update`, table_name `auth_password`, record_id the tenant id, tenant_id set, no password
+  in old_data or new_data). Same error style as api/admin/accounts.ts.
+- Tenants page: "Reset Password" button on a tenant with a login. Popup with New Password and Confirm New Password.
+- My Profile: "Change Password" in Edit Profile. Check the current password with `signInWithPassword`, then
+  `supabase.auth.updateUser({ password })`. One validation message per form, as in the other forms.
+- Add the owner's own recovery steps to the README (Supabase dashboard > Authentication > Users > the owner > reset).
+- Checks:
+  - Unit tests for api/admin/password.ts: 401 without a session, 403 for a tenant, 400 short password, 404 unknown
+    tenant, 409 tenant without a login, 200 success, and the log row has no password text.
+  - e2e at the three widths: the owner resets Ben's password, Ben logs in with the new one and not the old one.
+  - e2e: a tenant changes their password with the right current password, and gets the error with a wrong one.
+  - tests/unit/security.test.ts still passes (the service role stays in api/).
+
+## M20 Docs sync (no code)
+The live app has features the paper and docs/requirements.md do not name. Add them as FRs so the paper, the matrix
+and the app match:
+- FR-029: the admin records a cash or GCash payment directly and the receipt is made at once (`record_payment`).
+- FR-030: concerns work as a conversation between the tenant and the admin (`concern_messages`).
+- FR-031: a tenant changes their own username (api/account/username).
+- FR-032: a tenant sees their roommates and the 8 bed spaces of their room (`my_roommates`).
+- FR-033: the admin sets the GCash account name and number in Settings, and tenants see it on My Payments.
+- Check each one against the code before adding it. Fix the wording if the code differs.
+- Update docs/REQUIREMENTS-MATRIX.md with FR-027 to FR-033 and the tests that prove them.
+- Write docs/PAPER-CHANGES.md for the human: the new FR rows, the ERD changes (concern_messages,
+  `monthly_bills.in_split`, the GCash settings columns and every other column the migrations after
+  20261019010000 added), and the DFD and flowchart pages that need a new box or arrow.
+- Checks: every FR in docs/requirements.md has a row in the matrix with at least one test file.

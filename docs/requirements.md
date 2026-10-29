@@ -29,6 +29,8 @@ Source: docs/reference/paper/SantosBoardingHouse-revised-preview.pdf. Every modu
 - FR-024 (HIGH): The system shall allow the admin and all tenants to view each month's utility bill amounts and bill photos.
 - FR-025 (HIGH): The system shall record every change to rooms, tenants, room assignments, settings, utility bills, monthly bills, payments, receipts, concerns, and announcements in a history log with the user, date, action, and old and new values. The admin shall view all history logs, and each tenant shall view the logs about their own records.
 - FR-026 (HIGH): The system shall allow the admin to download the GCash proof images tenants upload, one payment at a time or all proofs of a month as one ZIP file with a list of the payments.
+- FR-027 (HIGH): The system shall create each active tenant's monthly bill for the month by the 1st, with the rent, even before the utility bills are entered, and shall keep a month's bill split fixed to the tenants billed at the start of the month.
+- FR-028 (HIGH): The system shall allow the admin to reset a tenant's password, and allow every user to change their own password after entering the current one.
 
 ## Non-functional requirements
 - NFR-001 Usability: The system shall use a simple, intuitive interface that admins and tenants can operate without training.
