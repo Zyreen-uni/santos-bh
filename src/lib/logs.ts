@@ -61,6 +61,7 @@ const FIELD: Record<string, string> = {
   proof_path: 'Proof', receipt_number: 'Receipt', subject: 'Subject', details: 'Details', admin_response: 'Response',
   title: 'Title', message: 'Message', body: 'Message', room_id: 'Room', tenant_id: 'Tenant', date_started: 'Date Started',
   date_ended: 'Date Ended', published_at: 'Posted', photo: 'Photo', user_id: 'Login', payment_date: 'Payment Date',
+  password: 'Password',
 };
 // Columns that only the system cares about: never shown as a change.
 const HIDDEN = new Set(['updated_at', 'created_at', 'entered_by', 'submitted_by', 'verified_by', 'verified_at', 'responded_at',
@@ -107,12 +108,15 @@ export function describe(l: RawLog, names: Names): Log {
     case 'concerns': record = `Concern ${concernCode(Number(l.record_id))}`; break;
     case 'concern_messages': record = `Concern ${concernCode(Number(row.concern_id))}`; break;
     case 'announcements': record = `Announcement${row.title ? `, ${row.title}` : ''}`; break;
+    // api/admin/password writes this row (M19); it never holds the password itself.
+    case 'auth_password': record = `Password, ${tenant ?? ''}`.replace(/, $/, ''); break;
     default: record = `${l.table_name} ${l.record_id}`;
   }
   // Ids and bookkeeping columns mean nothing to a person, so they are left out.
   const keys = [...new Set([...Object.keys(l.old_data ?? {}), ...Object.keys(l.new_data ?? {})])].filter((k) => !HIDDEN.has(k) && !k.endsWith('_id'));
   const changes = keys.map((k) => ({ field: FIELD[k] ?? k, old: l.action === 'insert' ? '' : showValue(k, l.old_data?.[k]), new: l.action === 'delete' ? '' : showValue(k, l.new_data?.[k]) }));
-  if (l.action === 'update' && changes.length) record += `, ${changes.map((c) => c.field).slice(0, 2).join(', ')}`;
+  // "Profile, Contact #": the fields an update changed (a password reset already says what it is).
+  if (l.action === 'update' && changes.length && l.table_name !== 'auth_password') record += `, ${changes.map((c) => c.field).slice(0, 2).join(', ')}`;
   return {
     ...l,
     user: who?.name ?? (l.actor_name ? l.actor_name : 'System'),

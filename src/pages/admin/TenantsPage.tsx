@@ -12,7 +12,7 @@ import { supabase, USERNAME } from '@/lib/supabase';
 import {
   checkTenant, fetchHistory, fetchTenants, openRooms, shortDate, slotsLabel, todayPH, type Tenant, type TenantForm, type TenantsData,
 } from '@/lib/tenants';
-import { MIN_PASSWORD } from '@/lib/validation';
+import { checkNewPassword, MIN_PASSWORD } from '@/lib/validation';
 import { cn, peso } from '@/lib/utils';
 
 const CARDS = {
@@ -27,6 +27,7 @@ type Dialog =
   | { kind: 'view'; tenant: Tenant }
   | { kind: 'inactive'; tenant: Tenant }
   | { kind: 'login'; tenant: Tenant }
+  | { kind: 'password'; tenant: Tenant }
   | { kind: 'manager' }
   | null;
 type Message = { title: string; text?: string; tone: 'ok' | 'bad' } | null;
@@ -146,6 +147,11 @@ function ProfileDialog({ tenant, rent, onClose, onOpen }: { tenant: Tenant; rent
         {tenant.status === 'active' && !tenant.user_id && (
           <button type="button" className={btn.soft} onClick={() => onOpen({ kind: 'login', tenant })}>
             Create Login
+          </button>
+        )}
+        {tenant.status === 'active' && tenant.user_id && (
+          <button type="button" className={btn.soft} onClick={() => onOpen({ kind: 'password', tenant })}>
+            Reset Password
           </button>
         )}
         <div className="grid grid-cols-2 gap-2.5">
@@ -290,6 +296,52 @@ function LoginDialog({ tenant, onClose, onSaved }: { tenant: Tenant; onClose: ()
           </button>
           <button type="submit" className={cn(btn.primary, 'flex-[2]')} disabled={create.isPending}>
             Create Login
+          </button>
+        </div>
+      </form>
+      <MessageDialog open={!!error} onClose={() => setError('')} tone="bad" title="Invalid Input" message={error} />
+    </Modal>
+  );
+}
+
+// Reset Password (FR-028, api/admin/password). A reset email cannot arrive (logins are <username>@santosbh.local),
+// so the owner sets the new password here and gives it to the tenant in person.
+function ResetPasswordDialog({ tenant, onClose, onSaved }: { tenant: Tenant; onClose: () => void; onSaved: (m: Message) => void }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const reset = useMutation({
+    mutationFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+        body: JSON.stringify({ tenantId: tenant.tenant_id, password }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error || `Could not reset the password (error ${res.status}).`);
+    },
+    onSuccess: () =>
+      onSaved({ title: 'Password Changed', text: `Give ${tenant.full_name} the new password in person. The old password no longer works.`, tone: 'ok' }),
+    onError: (e) => setError(errorText(e)),
+  });
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const problem = checkNewPassword(password, confirm);
+    if (problem) setError(problem);
+    else reset.mutate();
+  }
+  return (
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Reset Password" description={`For ${tenant.full_name}. Tell the tenant the new password in person.`}>
+      <form onSubmit={onSubmit} noValidate className="mt-4 flex flex-col gap-4">
+        <PasswordField label="New Password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordField label="Confirm New Password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        <div className="mt-1 flex gap-2.5">
+          <button type="button" className={cn(btn.soft, 'flex-1')} onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className={cn(btn.primary, 'flex-[2]')} disabled={reset.isPending}>
+            {reset.isPending ? 'Saving...' : 'Reset Password'}
           </button>
         </div>
       </form>
@@ -516,6 +568,16 @@ export default function TenantsPage() {
       )}
       {dialog?.kind === 'login' && (
         <LoginDialog
+          tenant={dialog.tenant}
+          onClose={() => setDialog(null)}
+          onSaved={(m) => {
+            setDialog(null);
+            setMessage(m);
+          }}
+        />
+      )}
+      {dialog?.kind === 'password' && (
+        <ResetPasswordDialog
           tenant={dialog.tenant}
           onClose={() => setDialog(null)}
           onSaved={(m) => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, BedDouble, Camera, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { ChangePasswordDialog } from '@/components/ChangePassword';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Chip } from '@/components/ui/Chip';
 import { btn } from '@/components/ui/buttons';
@@ -99,6 +100,7 @@ function EditProfile({ profile, onClose, onDone }: { profile: MyProfile; onClose
   const [form, setForm] = useState<ProfileForm>({ fullName: profile.full_name, username: profile.username, email: profile.email ?? '', contactNumber: profile.contact_number });
   const [photo, setPhotoFile] = useState<File | null>(null);
   const [error, setError] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const set = (key: keyof ProfileForm) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
   // A preview of the chosen photo, released when it changes or the popup closes.
@@ -167,6 +169,9 @@ function EditProfile({ profile, onClose, onDone }: { profile: MyProfile; onClose
           {profile.date_started ? `Date Started (${shortDate(profile.date_started)}) and room are set by the owner.` : 'Your room is set by the owner.'}
           {form.username.trim().toLowerCase() !== profile.username && ' A new username is your new login.'}
         </span>
+        <button type="button" className={cn(btn.soft, 'self-start px-4 py-2 text-sm')} onClick={() => setChangingPassword(true)}>
+          Change Password
+        </button>
         <div className="flex gap-2.5">
           <button type="button" className={cn(btn.soft, 'flex-1')} onClick={onClose}>
             Cancel
@@ -177,6 +182,12 @@ function EditProfile({ profile, onClose, onDone }: { profile: MyProfile; onClose
         </div>
       </form>
       <MessageDialog open={!!error} onClose={() => setError('')} tone="bad" title="Invalid Input" message={error} />
+      {changingPassword && (
+        <ChangePasswordDialog
+          onClose={() => setChangingPassword(false)}
+          onDone={() => onDone({ title: 'Password Changed', text: 'Use your new password the next time you log in.', tone: 'ok' })}
+        />
+      )}
     </Modal>
   );
 }

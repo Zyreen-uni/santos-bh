@@ -108,6 +108,9 @@ export async function fetchKept(month: string): Promise<KeptRoom[]> {
 }
 
 // "Room 101: 1 bill already paid, not changed" (docs/decisions.md, 2026-10-29). A pending GCash proof counts as paid.
+// Added to "Monthly Bills Generated" when the bills_kept check itself fails: the save still stands.
+export const keptProblem = (e: unknown) => ` Saved, but could not check which bills were already paid: ${e instanceof Error ? e.message : String(e)}`;
+
 export const keptNote = (r: KeptRoom) => `Room ${r.room_number}: ${r.kept} ${r.kept === 1 ? 'bill' : 'bills'} already paid, not changed`;
 
 // "1,960" or "1960.50" as a number; NaN when empty or not a number.

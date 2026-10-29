@@ -2,7 +2,7 @@
 // The owner creates a login for a tenant record the owner added (FR-005).
 // app_metadata.tenant_id tells the database trigger to link the login to that tenant record.
 import { admin, requireAdmin } from '../../lib/supabaseAdmin.js';
-import { USERNAME, loginEmail } from '../../lib/accounts.js';
+import { MIN_PASSWORD, USERNAME, loginEmail } from '../../lib/accounts.js';
 import { HttpError, type ApiRequest, type ApiResponse } from '../../lib/http.js';
 
 interface Body {
@@ -17,7 +17,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     await requireAdmin(req);
     const { tenantId, username, password } = (req.body || {}) as Body;
     if (!USERNAME.test(username || '')) return res.status(400).json({ error: 'Username must be 4 to 30 letters, numbers, dots or underscores' });
-    if (!password || password.length < 8) return res.status(400).json({ error: 'Password must have at least 8 characters' });
+    if (!password || password.length < MIN_PASSWORD) return res.status(400).json({ error: `Password must have at least ${MIN_PASSWORD} characters` });
     const { data: tenant } = await admin().from('tenants').select('tenant_id, user_id, full_name').eq('tenant_id', tenantId).maybeSingle();
     if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
     if (tenant.user_id) return res.status(409).json({ error: 'Tenant already has a login' });

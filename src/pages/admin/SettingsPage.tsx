@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, ChevronRight, Smartphone } from 'lucide-react';
+import { CalendarDays, ChevronRight, KeyRound, Smartphone } from 'lucide-react';
+import { ChangePasswordDialog } from '@/components/ChangePassword';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { btn } from '@/components/ui/buttons';
 import { MessageDialog, Modal, PHONE_SHEET } from '@/components/ui/Modal';
@@ -213,7 +214,7 @@ function GcashDialog({ data, onClose, onDone }: { data: SettingsData; onClose: (
 // Settings (FR-022). Flowchart page 7, design Set-C.
 export default function SettingsPage() {
   const settings = useQuery({ queryKey: ['settings'], queryFn: fetchSettings });
-  const [open, setOpen] = useState<'rent' | 'due' | 'gcash' | null>(null);
+  const [open, setOpen] = useState<'rent' | 'due' | 'gcash' | 'password' | null>(null);
   const [message, setMessage] = useState<Message>(null);
   const done = (m: Message) => {
     setOpen(null);
@@ -249,9 +250,25 @@ export default function SettingsPage() {
           />
         </section>
       )}
+      {/* FR-028: every user changes their own password; the owner has no profile page, so it is here. */}
+      <section aria-label="Your account" className="mt-4 w-full max-w-[640px] rounded-[26px] bg-card px-[22px] py-2 max-md:rounded-card max-md:px-4 max-md:py-1">
+        <SettingRow
+          icon={<KeyRound size={20} />}
+          iconClass="bg-soft-blue text-navy"
+          title="Change Password"
+          value="Your own login password"
+          onClick={() => setOpen('password')}
+        />
+      </section>
       {open === 'rent' && settings.data && <RentDialog data={settings.data} onClose={() => setOpen(null)} onDone={done} />}
       {open === 'due' && settings.data && <DueDayDialog data={settings.data} onClose={() => setOpen(null)} onDone={done} />}
       {open === 'gcash' && settings.data && <GcashDialog data={settings.data} onClose={() => setOpen(null)} onDone={done} />}
+      {open === 'password' && (
+        <ChangePasswordDialog
+          onClose={() => setOpen(null)}
+          onDone={() => done({ title: 'Password Changed', text: 'Use your new password the next time you log in.', tone: 'ok' })}
+        />
+      )}
       <MessageDialog open={!!message} onClose={() => setMessage(null)} tone={message?.tone ?? 'ok'} title={message?.title ?? ''} message={message?.text} />
     </>
   );

@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { uploadBillPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
 import {
-  checkMeters, fetchKept, fetchUtility, keptNote, monthLabel, parseAmount, share, signedPhotoUrl, type KeptRoom, type MeterEntry, type MeterRoom,
+  checkMeters, fetchKept, fetchUtility, keptNote, keptProblem, monthLabel, parseAmount, share, signedPhotoUrl, type KeptRoom, type MeterEntry, type MeterRoom,
   type UtilityData,
 } from '@/lib/utility';
 import { cn, peso } from '@/lib/utils';
@@ -193,12 +193,12 @@ function BillsForm({ data, canEdit, myRoomId, isAdmin }: { data: UtilityData; ca
     onSuccess: async (n) => {
       setFiles({});
       // Which bills kept their amounts because they are already paid (M18). If that check fails, the save still stands.
-      let keptProblem = '';
+      let problem = '';
       try {
         setKept(await fetchKept(data.month));
       } catch (e) {
         setKept([]);
-        keptProblem = ` Saved, but could not check which bills were already paid: ${e instanceof Error ? e.message : String(e)}`;
+        problem = keptProblem(e);
       }
       await queryClient.invalidateQueries({ queryKey: ['utility'] });
       await queryClient.invalidateQueries({ queryKey: ['bills'] });
@@ -206,8 +206,8 @@ function BillsForm({ data, canEdit, myRoomId, isAdmin }: { data: UtilityData; ca
       const dueText = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
       setMessage({
         title: 'Monthly Bills Generated',
-        text: `${n} ${monthName.split(' ')[0]} ${n === 1 ? 'bill is' : 'bills are'} ready. Tenants see them on their dashboard now. Due ${dueText}.${keptProblem}`,
-        tone: keptProblem ? 'warn' : 'ok',
+        text: `${n} ${monthName.split(' ')[0]} ${n === 1 ? 'bill is' : 'bills are'} ready. Tenants see them on their dashboard now. Due ${dueText}.${problem}`,
+        tone: problem ? 'warn' : 'ok',
       });
     },
     onError: (e) => setMessage({ title: 'Could Not Save the Bills', text: e.message, tone: 'bad' }),

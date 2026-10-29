@@ -1,7 +1,7 @@
 # Notes
 
-Current module: M19 (then M20, M21)
-Last green test count: 549 (145 unit, 113 db, 291 e2e incl. 3 seed steps)
+Current module: M20 (then M21)
+Last green test count: 572 (156 unit, 113 db, 303 e2e incl. 3 seed steps)
 Open problems: none
 
 ## Local setup facts (read after a context reset)
@@ -273,6 +273,23 @@ Open problems: none
   notice has screenshots in reports/screens/M18 with a no-horizontal-scroll check. Known edge: a tenant who moved
   rooms mid-month sees the new room's meter on the tenant screens (the bill itself stays on the old room).
 
+## M19 plan (FR-028, NFR-003)
+- Flowchart pages 4 and 11, design Tenants-B (profile panel), Prof-C (Edit Profile). Words from docs/modules.md.
+- api/admin/password.ts: POST { tenantId, password }, requireAdmin, MIN_PASSWORD (now one constant in lib/accounts.ts,
+  re-exported by src/lib/validation.ts and used by api/admin/accounts too), 404 unknown tenant, 409 no login or
+  inactive, updateUserById, one activity_logs row (table_name auth_password, new_data says "reset by the owner",
+  never the password). History Logs shows it as "Password, <tenant>".
+- Tenants: Reset Password on the profile panel of an active tenant with a login (popup: New Password, Confirm New
+  Password, "Password Changed"). My Profile: Change Password in Edit Profile (src/components/ChangePassword.tsx:
+  signInWithPassword with the current password, then updateUser). FR-028 says every user, and the owner has no
+  profile page, so the same popup is in Settings under "Your account".
+- README.md (new, root): password section with the owner's own recovery: the dashboard if it offers a new password,
+  otherwise one SQL Editor statement (checked locally: Auth accepts the bcrypt hash, login returned 200).
+- Tests: tests/unit/adminPassword.test.ts (mocks createClient, so the real admin() and requireAdmin run),
+  tests/unit/passwords.test.ts, e2e/m19-passwords.spec.ts (Ben Salazar reset, Dan Lopez change, owner change and
+  back, a tenant gets 403 from the API). m19 runs after every other spec, and each width has its own seed.
+- Also covers the M18 review note: keptProblem() in src/lib/utility.ts has a unit test.
+
 ## Gate proof (M0)
 - Broke tests/unit/utils.test.ts on purpose (peso(1830) expected '₱1,831') and tried to stop.
 - The Stop hook ran `npm run verify`, blocked the stop ("npm run verify is red ... Gate block 1 of 8") and showed
@@ -299,3 +316,4 @@ Open problems: none
 - M17 Final pass: user-story walk and axe (WCAG 2.1 AA, no serious issues) on every page at three widths, keyboard dialogs, security checks (secrets, RLS, private buckets, anon), docs/REQUIREMENTS-MATRIX.md. 528 tests. Review PASS.
 - After M17 (2026-10-26): Login and Register share one compact card (src/pages/AuthPage.tsx) that fits laptop, tablet and phone without scrolling; animated-background pill and transition-panel (new local mode="wait" so the two forms never coexist) with a measured height animation. Dev/test port 5317 -> 5417 (Windows reserved 5236-5335). 538 tests (142 unit, 105 db, 291 e2e).
 - M18 Monthly bills without the utility entry: bill_snapshot migration (in_split snapshot, generate for the service role and direct sessions, centavo-exact split, joiner bills, bills_kept, month_split), cron makes the month's bills before overdue, kept-bills notice and snapshot counts on Utility Billing and tenant screens. 549 tests. Review PASS after one FAIL.
+- M19 Password reset and change: api/admin/password (owner resets, logged without the password), Change Password for tenants (Edit Profile) and the owner (Settings), MIN_PASSWORD in lib/accounts.ts, README with the owner's own recovery. 572 tests. Review PASS.
