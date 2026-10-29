@@ -18,6 +18,8 @@ const card = (page: Page, name: string) => page.getByRole('article', { name, exa
 
 // Picks the option whose text starts with the prefix, such as '203 (' or 'Maria Reyes,'.
 async function selectStarting(select: Locator, prefix: string) {
+  // allTextContents() does not wait: on a busy machine the popup could still be opening and give no options.
+  await expect(select.locator('option').first()).toBeAttached();
   const options = await select.locator('option').allTextContents();
   const label = options.find((o) => o.startsWith(prefix));
   expect(label, `an option starting with "${prefix}" in: ${options.join(' | ')}`).toBeTruthy();
@@ -131,6 +133,8 @@ test('add a tenant to a room, edit and move rooms, create a login, then mark ina
   const username = `paolo.${tag(info)}`;
   await openTenants(page);
   await page.getByRole('button', { name: '+ Add Tenant' }).click();
+  // Wait for the list: read too early, it is empty and "201 is not offered" would pass without checking anything.
+  await expect(page.getByRole('dialog').getByLabel('Room').locator('option').first()).toBeAttached();
   const options = await page.getByRole('dialog').getByLabel('Room').locator('option').allTextContents();
   expect(options).not.toContain('201 (0 slots left)');
   expect(options.some((o) => o.startsWith('201'))).toBe(false); // full room is not offered

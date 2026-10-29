@@ -17,6 +17,7 @@ async function openConcerns(page: Page) {
 test('concerns show newest first; the laptop opens the open concern with its conversation', async ({ page }, info) => {
   await openConcerns(page);
   await expect(page.getByText('Reports from tenants, newest first')).toBeVisible();
+  await expect(list(page).getByRole('button').first()).toBeVisible(); // allTextContents() does not wait for the list
   const names = await list(page).getByRole('button').allTextContents();
   expect(names[0]).toContain('Ana Lim');
   expect(names[0]).toContain('Leaking faucet in CR');

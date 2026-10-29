@@ -2,7 +2,7 @@
 
 Current module: M21 (back-end tests and the QA report)
 Last green test count: 575 (159 unit, 113 db, 303 e2e incl. 3 seed steps)
-Open problems: M21 in progress (see "M21 status" below)
+Open problems: none (the red verify of 2026-10-29 is fixed, see "M21 status")
 
 ## Local setup facts (read after a context reset)
 - Another local Supabase project ("Honoris") on this machine uses the default ports 54321-54329.
@@ -344,3 +344,8 @@ Open problems: M21 in progress (see "M21 status" below)
   tests/db/api.mjs real-API calls via Vite ssrLoadModule outside the transaction, temporary users cleaned up;
   tests/catalog/backend.json + check; docx devDependency, scripts/backend-report.mjs, "report:backend" (runs the full
   unit suite into reports/vitest.json so the gate's count never drops, then test:db, then builds the report).
+- Red verify (2026-10-29, fixed 2026-10-30): m03 "manager swap" failed at its last step with an empty "Active Tenant"
+  list, so Maria was never made manager again and m05, m10, m11 and m17 failed after it. Cause: the helper read the
+  options with allTextContents(), which does not wait, while the popup was still opening on a busy machine. It passed
+  3 of 3 runs alone. Fix: wait for the first option before reading (same fix in m03 Add Tenant and m07 concern list;
+  the m03 one could otherwise pass with an empty list). No assertion changed.
